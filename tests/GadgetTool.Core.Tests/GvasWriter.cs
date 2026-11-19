@@ -62,8 +62,11 @@ internal static class GvasWriter
     public static byte[] Type(GvasType type) =>
         Concat(FString(type.Name), Int32(type.Inner.Count), Concat(type.Inner.Select(Type).ToArray()));
 
+    /// <summary>As Unreal writes it: pure ASCII as bytes, anything else as UTF-16 (negative length).</summary>
     public static byte[] FString(string text) =>
-        text.Length == 0 ? Int32(0) : Concat(Int32(text.Length + 1), Encoding.Latin1.GetBytes(text), [0]);
+        text.Length == 0 ? Int32(0)
+        : text.All(c => c < 0x80) ? Concat(Int32(text.Length + 1), Encoding.ASCII.GetBytes(text), [0])
+        : Concat(Int32(-(text.Length + 1)), Encoding.Unicode.GetBytes(text), [0, 0]);
 
     public static byte[] Int32(int value)
     {

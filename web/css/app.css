@@ -710,6 +710,11 @@ body.theme-game {
 /* The game draws a 512-pixel icon over a base whose drawn part is 435 pixels high, both centred. */
 .art-icon { position: absolute; left: 50%; top: 50%; height: calc(var(--u-h) * 512 / 435); width: auto; aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%); }
+/* A 2- or 3-slot base fills its cells: stretched by its middle, the pointed ends (the first
+   115 pixels of 435 on each side) kept as drawn. */
+.art.long { width: 100%; box-sizing: border-box; border: solid transparent; border-width: 0 calc(var(--u-h) * 115 / 435);
+  border-image: var(--base) 0 115 fill / 0 calc(var(--u-h) * 115 / 435) stretch; }
+.hex.block.art-block > .art.long { position: absolute; inset: 0; height: 100%; }
 .hex.block.art-block, .theme-game .hex.block.art-block { background: none; clip-path: none; overflow: visible; }
 .hex.block.art-block.bad .art { filter: drop-shadow(0 0 6px var(--bad)) drop-shadow(0 0 2px var(--bad)); }
 .hex.block.art-block::before { display: none; }

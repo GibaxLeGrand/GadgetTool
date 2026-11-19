@@ -116,7 +116,8 @@ static bool WriteIcons(GameFiles game, JsonObject catalog, string folder)
         try
         {
             var (width, height, rgba) = game.TextureRgba(PackBuilder.PackagePath(path));
-            File.WriteAllBytes(Path.Combine(folder, id + ".png"), PngWriter.Encode(width, height, rgba));
+            // Centred on its canvas, so it sits in the middle of its base (Gibax).
+            File.WriteAllBytes(Path.Combine(folder, id + ".png"), PngWriter.Encode(width, height, PngWriter.CenterDrawing(width, height, rgba)));
             written++;
         }
         catch (Exception e)

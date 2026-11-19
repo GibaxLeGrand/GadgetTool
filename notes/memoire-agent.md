@@ -126,6 +126,21 @@ import.
     remembered in browser storage. **Plate visuals: take them from the game's files**
     (FModel, on a machine with the game) rather than drawing them in CSS; read at runtime
     from the player's install, never committed.
+- **Game versions (Gibax, 2026-11-19)**: a rebalance must not break shares or saves silently.
+  - The catalog carries the game version ("major.minor.patch"; `data/dev` says 0.1.0, the
+    local wiki catalog 2.0.0; the real one will come from the game's files).
+  - Share codes carry the version (3 bytes) and each gadget's slot cost (2 bits); `.gtpresets`
+    files carry the version and each gadget's name and slot cost.
+  - Import rule (his): **same version** → nothing to check; **share older than ours** →
+    check the preset's gadgets against our version: unchanged gadgets = compatible (no
+    warning), changed or removed ones are listed, then the usual paste rules apply; **share
+    newer than ours** → not compatible, error, nothing imported. Unknown version → checked
+    like an older one.
+  - Saves: `%LOCALAPPDATA%\GadgetTool\seen-game.json` keeps, per save, the game it was last
+    opened with. On open after an update, only gadgets the presets use are compared; if any
+    changed, a banner says what, and the presets it broke are kept as they are, marked red
+    ("fix it before playing"). The old record stays until "Got it".
+  - Share-code bytes changed for this (format byte still 1: nothing was released yet).
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

@@ -154,11 +154,27 @@ public class PackBuilderTests
     }
 
     [Fact]
-    public void Reads_the_steam_build_id_from_the_app_manifest()
+    public void The_index_entry_lists_every_file_of_the_pack_with_its_hash()
     {
-        const string manifest = "\"AppState\"\n{\n\t\"appid\"\t\t\"1\"\n\t\"buildid\"\t\t\"24680\"\n\t\"LastOwner\"\t\t\"0\"\n}\n";
+        var folder = Path.Combine(Path.GetTempPath(), "gadgettool-pack-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(folder, "icons"));
+            File.WriteAllText(Path.Combine(folder, "catalog.json"), "{}");
+            File.WriteAllBytes(Path.Combine(folder, "icons", "Speed_A.png"), [1, 2, 3]);
 
-        Assert.Equal("24680", PackBuilder.SteamBuildId(manifest));
-        Assert.Null(PackBuilder.SteamBuildId("\"AppState\" { }"));
+            var entry = PackBuilder.IndexEntry(new GameVersion(2, 0, 0), "12345", folder);
+
+            Assert.Equal("2.0.0", entry.Folder);
+            Assert.Equal(["12345"], entry.SteamBuildIds);
+            Assert.Equal(["catalog.json", "icons/Speed_A.png"], entry.Files.Keys.Order(StringComparer.Ordinal));
+            // SHA-256 of "{}" and of the bytes 1, 2, 3.
+            Assert.Equal("44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a", entry.Files["catalog.json"]);
+            Assert.Equal("039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81", entry.Files["icons/Speed_A.png"]);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 }

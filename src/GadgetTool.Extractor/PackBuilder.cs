@@ -168,18 +168,19 @@ internal static class PackBuilder
             : throw new ArgumentException($"'{gamePath}' is not under /Game/.", nameof(gamePath));
     }
 
-    /// <summary>The <c>buildid</c> of a Steam <c>appmanifest_*.acf</c>, or null.</summary>
-    public static string? SteamBuildId(string appManifest)
+    /// <summary>
+    /// The pack's entry for <c>index.json</c>: every file of the version folder with its SHA-256
+    /// (lower-case hex), paths with forward slashes.
+    /// </summary>
+    public static PackEntry IndexEntry(GameVersion version, string? steamBuildId, string folder)
     {
-        foreach (var line in appManifest.Split('\n'))
-        {
-            var parts = line.Trim().Split('"', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(p => p.Length > 0).ToArray();
-            if (parts.Length == 2 && parts[0].Equals("buildid", StringComparison.OrdinalIgnoreCase)
-                && parts[1].All(char.IsAsciiDigit))
-                return parts[1];
-        }
-        return null;
+        var files = Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal)
+            .ToDictionary(
+                f => Path.GetRelativePath(folder, f).Replace('\\', '/'),
+                f => Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(f))),
+                StringComparer.Ordinal);
+        return new PackEntry(version, steamBuildId is null ? [] : [steamBuildId], version.ToString(), files);
     }
 
     /// <summary>One text field of a row in every language that resolves it.</summary>

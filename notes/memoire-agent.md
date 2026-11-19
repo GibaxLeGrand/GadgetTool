@@ -184,6 +184,14 @@ import.
     pack with a warning. Online: data packs download into LocalAppData (easy); a new app
     version is announced with a download (replacing a running exe needs a small updater:
     later). Only the official repository over HTTPS, SHA-256 checked, opt-in.
+- **Languages (Gibax, 2026-11-19): game texts first.** Gadget names, categories and
+  descriptions come in every language the game ships, from the extractor; the catalog
+  format holds them (`docs/DATA.md`: a text is a string or `{ "lang": text }`, plus a
+  `categoryId` that does not change with the language). The app shows a "language of the
+  game's texts" picker when the data has more than one, defaulting to Windows' language,
+  with the default language as fallback text by text. Shares and files hold ids only, so
+  they work across languages. The tool's own UI text (buttons, messages) stays English
+  for now: Gibax asked only for the data side ("prépare juste ça pour l'extracteur").
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

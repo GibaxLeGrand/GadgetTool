@@ -83,6 +83,16 @@ import.
   each gadget's exact cell (the tool works out an arrangement); how lower plates (2 to 5
   slots) spread over the rows; unlocked gadgets and plate level are per local player (the
   adapter can give every player the same set if the save has only one).
+- **Web UI** (`web/`, see `web/README.md`), first version 2026-11-19: runs alone in a
+  browser on a mock save; `js/backend-mock.js` mirrors the Core's rules and formats until
+  the WebView2 host exists (a test checks both produce the same share code). Placement is
+  automatic (the Core's `Arrange`), as long as we do not know whether the save stores
+  cells. UI text is in English, kept simple for a later translation. Preview in the Claude
+  app: `gadgettool-web` in the session root's `.claude/launch.json` (python http.server on
+  127.0.0.1:8766), then open `/web/`.
+- Local test catalog: `extracted/wiki-catalog.js` (git-ignored), built from the wiki's raw
+  wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
+  with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.
 - Icons: the final app reads them from the game files. Wiki icons may be used **locally**
   for prototyping only, in an ignored folder (`extracted/`), never committed.
   2026-11-19: the wiki's API gives the icon URLs (134 of 139 found, 31 MB at full size), but

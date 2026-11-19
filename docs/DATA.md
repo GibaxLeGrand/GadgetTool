@@ -144,6 +144,7 @@ game's canvases have transparent margins, the 2-slot base sits on a 3-slot canva
 | `base-kit-1.png`, `base-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001`, `UI_GadgetIcon_Base_03_Kit_001` | `base: kit` |
 | `base-mini.png` | `UI_GadgetIcon_Base_01_Mini` | `base: mini` |
 | `base-super.png` | `UI_GadgetIcon_Base_01_Super_01` | the gadget in the Super Slot |
+| `super-outline.png`, `super-mask.png` | `UI_GadgetIcon_Base_01_Super_01_Mask_Outline`, `..._Mask` | the Super base's light (see below) |
 
 The game picks the base in native code (`EquipmentGadgetIcon::SetIconBaseShape`); its
 widgets list the materials (`BaseIconGadgetKitMaterialRefArray`, `FrameIconMiniGadgetMaterial`,
@@ -171,7 +172,7 @@ pictures from the atlas `UI_GadgetCustom_GadgetPlate` (`/Game/01_Union/UI/Garage
 Every picture draws all six cells and the Super Slot as empty hexagons (the game's empty
 cell, a dark hexagon with a "G"). The geometry comes from `WBP_GadgetCustom_Sub_GadgetPlate`:
 cells of 307 pixels (512 scaled by 0.6), the first centred at 222,348 of the cut picture, the
-next 374 across and 316 down, the Super Slot at 1257,499, the name band at 25,85 to 1400,175.
+next 374 across and 316 down, the Super Slot at 1261,499 (the widget says 1257; 1261 is the centre of the picture's gold hole, and Gibax saw its rim on the right at 1257), the name band at 25,85 to 1400,175.
 The page fills the cells left to right, top row first; it leaves an empty cell as the picture
 draws it (a "+" on hover), and darkens a cell the plate level does not open under the game's
 lock (`UI_GudgetCustom_LockIcon`; the "+" is `UI_GudgetCustom_PlusMark`). Without a pack, the
@@ -187,7 +188,22 @@ draws them the same way on the game's plate, centred on their cells (on its own 
 without a data pack, it stretches them by the middle); the game moves the icon by 314 and 628
 for 2 and 3 slots (`GadgetIcon_Loop_Cost2`, `_Cost3`), the middle of the cells, as the page
 does. The page draws the 512-pixel icon centred over the base, at 512/435 of the base's
-height, as the two textures line up in the game. The Mini frame is the usual base at 0.8 (its
+height, as the two textures line up in the game. The 1-slot bases (usual, kit, Mini, Super) are 512x512 textures that the game draws in
+a 580x512 image (`Base_01` in `WBP_GadgetIcon`, `DMY_Frame` in the list's
+`WBP_GadgetIcon_Cost01_Icon`): 580/512 wider, which fills the plate's cell; the page does the
+same, the icon keeping its shape.
+
+**The Super Slot's gold base** is drawn with the material `M_UI_TitlePlateR_Gadget`: the gold
+texture (483 of 512 pixels high where the others are 435), with, added on top
+(`Blend_LinearDodge`), its "G" pattern (`..._Mask`) lit in `#FFD235` and its outline
+(`..._Mask_Outline`) in `#FFA346`, and a `#FFF800` light turning around the centre
+(`VectorToRadialValue`, `UI_CMN_Material_Scroll_MaskAlpha2`, speed 10); colours and textures
+are the material's default values (`CachedExpressionData`). The extractor writes both masks
+(8-bit grey in the game, `PF_G8`) as white with the grey as opacity, cut to the same box as
+`base-super.png`; the page adds them over the base. How bright each part is, and the light's
+speed, is the page's guess: the material's graph is not in the game's files.
+
+The Mini frame is the usual base at 0.8 (its
 blue edge 359 pixels wide instead of 448, its dark inside 324 instead of 407) in a silver
 ring, and the game draws a Mini gadget's icon at 0.8 too (Gibax's renders of "Lv1 Quick
 Charge" and "Mini Lv1 Quick Charge"); the page does the same. The pink "EX" bases (`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are for the festival

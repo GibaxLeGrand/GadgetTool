@@ -157,6 +157,28 @@ static bool WriteUi(GameFiles game, string folder)
     }
     Console.WriteLine($"Wrote {PackBuilder.UiTextures.Count} icon bases and marks to {folder}");
 
+    // The Super base's light masks, grey in the game: as transparency, cut like the base.
+    try
+    {
+        var super = game.TextureRgba(PackBuilder.UiTextures["base-super.png"]);
+        var (bx, by, bw, bh) = PngWriter.DrawnBox(super.Width, super.Height, super.Rgba)
+            ?? throw new InvalidOperationException("the Super base is empty");
+        foreach (var (name, texture) in PackBuilder.SuperMasks)
+        {
+            var mask = game.TextureRgba(texture);
+            if ((mask.Width, mask.Height) != (super.Width, super.Height))
+                throw new InvalidOperationException($"{texture} is {mask.Width}x{mask.Height}, the base {super.Width}x{super.Height}");
+            var cut = PngWriter.Crop(mask.Width, mask.Height, PngWriter.MaskToAlpha(mask.Rgba), bx, by, bw, bh);
+            File.WriteAllBytes(Path.Combine(folder, name), PngWriter.Encode(bw, bh, cut));
+        }
+        Console.WriteLine($"Wrote the Super base's {PackBuilder.SuperMasks.Count} light masks to {folder}");
+    }
+    catch (Exception e)
+    {
+        Console.Error.WriteLine($"  Super masks: {e.Message}");
+        ok = false;
+    }
+
     // The plates: each 2048x1024 picture of the atlas, cut to what is drawn.
     try
     {

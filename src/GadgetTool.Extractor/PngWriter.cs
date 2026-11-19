@@ -67,6 +67,17 @@ internal static class PngWriter
     /// </summary>
     public static (int Width, int Height, byte[] Rgba) TrimTransparent(int width, int height, byte[] rgba, byte alphaThreshold = 8)
     {
+        if (DrawnBox(width, height, rgba, alphaThreshold) is not var (x, y, w, h))
+            return (width, height, rgba);
+        return (w, h, Crop(width, height, rgba, x, y, w, h));
+    }
+
+    /// <summary>
+    /// The box that holds every pixel more opaque than <paramref name="alphaThreshold"/>, or
+    /// null when there is none (what <see cref="TrimTransparent"/> keeps).
+    /// </summary>
+    public static (int X, int Y, int Width, int Height)? DrawnBox(int width, int height, byte[] rgba, byte alphaThreshold = 8)
+    {
         int left = width, top = height, right = -1, bottom = -1;
         for (var y = 0; y < height; y++)
         {
@@ -80,14 +91,38 @@ internal static class PngWriter
                 bottom = Math.Max(bottom, y);
             }
         }
-        if (right < 0)
-            return (width, height, rgba);
+        return right < 0 ? null : (left, top, right - left + 1, bottom - top + 1);
+    }
 
-        int w = right - left + 1, h = bottom - top + 1;
-        var cut = new byte[w * h * 4];
-        for (var y = 0; y < h; y++)
-            Array.Copy(rgba, ((top + y) * width + left) * 4, cut, y * w * 4, w * 4);
-        return (w, h, cut);
+    /// <summary>Grey pixels, one byte each (<c>PF_G8</c>), as opaque RGBA.</summary>
+    public static byte[] GreyToRgba(ReadOnlySpan<byte> grey, int width, int height)
+    {
+        if (grey.Length < width * height)
+            throw new ArgumentException($"{grey.Length} bytes for {width}x{height} grey pixels.", nameof(grey));
+        var rgba = new byte[width * height * 4];
+        for (var i = 0; i < width * height; i++)
+        {
+            rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = grey[i];
+            rgba[i * 4 + 3] = 255;
+        }
+        return rgba;
+    }
+
+    /// <summary>
+    /// A grey mask (the game's are black where nothing shows, white where it shows) as white
+    /// pixels whose opacity is the mask's brightness, so a page can use it as a CSS mask.
+    /// </summary>
+    public static byte[] MaskToAlpha(byte[] rgba)
+    {
+        ArgumentNullException.ThrowIfNull(rgba);
+        var mask = new byte[rgba.Length];
+        for (var i = 0; i + 3 < rgba.Length; i += 4)
+        {
+            var bright = Math.Max(rgba[i], Math.Max(rgba[i + 1], rgba[i + 2]));
+            mask[i] = mask[i + 1] = mask[i + 2] = 255;
+            mask[i + 3] = (byte)(bright * rgba[i + 3] / 255);
+        }
+        return mask;
     }
 
     /// <summary>

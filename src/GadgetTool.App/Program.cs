@@ -11,7 +11,7 @@ internal static class Program
         var options = AppOptions.Parse(args);
 
         // Until the catalog is read from the game's files: a JSON gadget list (made-up by default).
-        GadgetCatalog catalog;
+        LocalizedCatalog catalog;
         try
         {
             catalog = CatalogJson.Parse(File.ReadAllText(options.CatalogPath));

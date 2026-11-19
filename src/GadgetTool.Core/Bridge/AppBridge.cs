@@ -29,7 +29,7 @@ public interface IHostUi
 /// <param name="Names">The presets' names (GadgetTool only, never in the save).</param>
 /// <param name="Seen">The game each save was last seen with, to report what an update changed.</param>
 public sealed record AppBridgeOptions(
-    GadgetCatalog Catalog,
+    LocalizedCatalog Catalog,
     ISaveFormat Format,
     IHostUi Ui,
     IGameProcessProbe Game,
@@ -53,6 +53,10 @@ public sealed class AppBridge(AppBridgeOptions options)
 
     private readonly SafeSaveWriter _writer = new(options.Game, options.Time);
     private SaveSession? _session;
+    private string _language = options.Catalog.DefaultLanguage;
+
+    /// <summary>The gadget list in the language the page asked for (texts only differ).</summary>
+    private GadgetCatalog Gadgets => options.Catalog.For(_language);
 
     public string Handle(string requestJson)
     {
@@ -66,7 +70,7 @@ public sealed class AppBridge(AppBridgeOptions options)
 
             JsonNode result = method switch
             {
-                "catalog" => Catalog(),
+                "catalog" => Catalog(Text(args, "language")),
                 "openSave" => OpenSave(Text(args, "path")),
                 "openSample" => OpenSample(),
                 "reloadSave" => OpenSave(_session?.Path ?? throw new BridgeError("noSave", "No save is open.")),
@@ -90,19 +94,27 @@ public sealed class AppBridge(AppBridgeOptions options)
         catch (UnauthorizedAccessException e) { return Error(id, "io", e.Message); }
     }
 
-    private JsonObject Catalog() => new()
+    /// <param name="language">The language wanted for the game's texts ("fr", "fr-FR"...); the closest one the data has is used.</param>
+    private JsonObject Catalog(string? language)
     {
-        ["source"] = options.Catalog.Source,
-        ["gameVersion"] = options.Catalog.GameVersion.IsKnown ? options.Catalog.GameVersion.ToString() : null,
-        ["gadgets"] = new JsonArray([.. options.Catalog.Gadgets.Select(g => (JsonNode)new JsonObject
+        _language = options.Catalog.Resolve(language);
+        return new JsonObject
         {
-            ["id"] = g.Id,
-            ["name"] = g.Name,
-            ["slotCost"] = g.SlotCost,
-            ["category"] = g.Category,
-            ["description"] = g.Description,
-        })]),
-    };
+            ["source"] = options.Catalog.Source,
+            ["gameVersion"] = options.Catalog.GameVersion.IsKnown ? options.Catalog.GameVersion.ToString() : null,
+            ["language"] = _language,
+            ["languages"] = new JsonArray([.. options.Catalog.Languages.Select(l => (JsonNode)l)]),
+            ["gadgets"] = new JsonArray([.. Gadgets.Gadgets.Select(g => (JsonNode)new JsonObject
+            {
+                ["id"] = g.Id,
+                ["name"] = g.Name,
+                ["slotCost"] = g.SlotCost,
+                ["category"] = g.Category,
+                ["categoryId"] = g.CategoryKey,
+                ["description"] = g.Description,
+            })]),
+        };
+    }
 
     private JsonObject OpenSave(string? path)
     {
@@ -110,13 +122,13 @@ public sealed class AppBridge(AppBridgeOptions options)
         if (path is null)
             return Cancelled();
 
-        _session = SaveSession.Open(path, options.Format, options.Catalog);
+        _session = SaveSession.Open(path, options.Format, Gadgets);
 
         // A save seen before, with gadgets that an update changed: report it, and keep the old
         // game on record until the user has seen the report. Otherwise record today's game.
-        var update = options.Seen.Check(path, _session.Current, options.Catalog);
+        var update = options.Seen.Check(path, _session.Current, Gadgets);
         if (update is null)
-            options.Seen.Remember(path, options.Catalog);
+            options.Seen.Remember(path, Gadgets);
 
         var dto = SaveDto(_session);
         dto["gameUpdate"] = update is null ? null : GameUpdateDto(update);
@@ -126,7 +138,7 @@ public sealed class AppBridge(AppBridgeOptions options)
     private JsonObject AcknowledgeGameUpdate()
     {
         var session = _session ?? throw new BridgeError("noSave", "No save is open.");
-        options.Seen.Remember(session.Path, options.Catalog);
+        options.Seen.Remember(session.Path, Gadgets);
         return [];
     }
 

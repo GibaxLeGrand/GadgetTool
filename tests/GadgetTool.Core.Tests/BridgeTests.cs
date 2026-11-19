@@ -39,7 +39,9 @@ public sealed class AppBridgeTests : IDisposable
         _bridge = BridgeWith(Catalog);
     }
 
-    private AppBridge BridgeWith(GadgetCatalog catalog) => new(new AppBridgeOptions(
+    private AppBridge BridgeWith(GadgetCatalog catalog) => BridgeWith(LocalizedCatalog.FromSingle(catalog));
+
+    private AppBridge BridgeWith(LocalizedCatalog catalog) => new(new AppBridgeOptions(
         catalog, new DevJsonSaveFormat(), _ui, new Probe(() => _gameRunning),
         new FixedTime(new DateTimeOffset(2026, 11, 19, 16, 0, 0, TimeSpan.Zero)),
         _temp.File("backups"), _temp.File("sample.json"), _temp.File("data/sample-copy.json"),
@@ -333,16 +335,70 @@ public class PresetNameStoreTests
 public class CatalogJsonTests
 {
     [Fact]
-    public void Reads_a_catalog()
+    public void Reads_a_catalog_with_texts_in_one_language()
     {
         var catalog = CatalogJson.Parse("""
             { "format": "gadgettool.catalog", "version": 1, "source": "Test",
               "gadgets": [ { "id": "a", "name": "A", "slotCost": 2, "category": "Rings", "description": "Does a." } ] }
-            """);
+            """).For(null);
 
         Assert.Equal("Test", catalog.Source);
         Assert.True(catalog.TryGet("a", out var a));
-        Assert.Equal(new GadgetDefinition("a", "A", 2, "Rings", "Does a."), a);
+        Assert.Equal(new GadgetDefinition("a", "A", 2, "Rings", "Does a.", "Rings"), a);
+    }
+
+    private const string TwoLanguages = """
+        { "format": "gadgettool.catalog", "version": 1, "source": "Test", "gameVersion": "2.0.0",
+          "defaultLanguage": "en",
+          "gadgets": [
+            { "id": "a", "slotCost": 1, "categoryId": "rings",
+              "name": { "en": "Ring Magnet", "fr": "Aimant à anneaux", "zh-Hans": "吸环器" },
+              "category": { "en": "Rings", "fr": "Anneaux" },
+              "description": { "en": "Pulls rings." } },
+            { "id": "b", "slotCost": 2, "name": { "en": "Only English" } }
+          ] }
+        """;
+
+    [Fact]
+    public void Reads_texts_in_every_language_with_the_default_as_fallback()
+    {
+        var catalog = CatalogJson.Parse(TwoLanguages);
+
+        Assert.Equal(["en", "fr", "zh-Hans"], catalog.Languages);
+        var fr = catalog.For("fr");
+        Assert.True(fr.TryGet("a", out var a));
+        Assert.Equal("Aimant à anneaux", a.Name);
+        Assert.Equal("Anneaux", a.Category);
+        Assert.Equal("rings", a.CategoryKey);
+        Assert.Equal("Pulls rings.", a.Description);
+        Assert.True(fr.TryGet("b", out var b));
+        Assert.Equal("Only English", b.Name);
+        Assert.Equal(GameVersion.Parse("2.0.0"), fr.GameVersion);
+    }
+
+    [Theory]
+    [InlineData("fr-FR", "fr")]
+    [InlineData("FR", "fr")]
+    [InlineData("zh-CN", "zh-Hans")]
+    [InlineData("ja", "en")]
+    [InlineData(null, "en")]
+    public void A_requested_language_maps_to_the_closest_one_the_data_has(string? requested, string used) =>
+        Assert.Equal(used, CatalogJson.Parse(TwoLanguages).Resolve(requested));
+
+    [Fact]
+    public void The_bridge_sends_the_catalog_in_the_language_asked()
+    {
+        using var temp = new TempFolder();
+        var bridge = new AppBridge(new AppBridgeOptions(
+            CatalogJson.Parse(TwoLanguages), new DevJsonSaveFormat(), new FakeUi(), new FakeGame(false), TimeProvider.System,
+            temp.File("b"), null, temp.File("s.json"), new PresetNameStore(temp.File("n.json")), new SeenGameStore(temp.File("seen.json"))));
+
+        var reply = System.Text.Json.Nodes.JsonNode.Parse(bridge.Handle("""{ "id": 1, "method": "catalog", "params": { "language": "fr-FR" } }"""))!["result"]!;
+
+        Assert.Equal("fr", reply["language"]!.GetValue<string>());
+        Assert.Equal(3, reply["languages"]!.AsArray().Count);
+        Assert.Equal("Aimant à anneaux", reply["gadgets"]![0]!["name"]!.GetValue<string>());
+        Assert.Equal("rings", reply["gadgets"]![0]!["categoryId"]!.GetValue<string>());
     }
 
     [Theory]
@@ -370,7 +426,7 @@ public class DevDataTests
     [Fact]
     public void The_sample_save_matches_the_made_up_catalog()
     {
-        var catalog = CatalogJson.Parse(File.ReadAllText(RepoFile("data/dev/catalog.json")));
+        var catalog = CatalogJson.Parse(File.ReadAllText(RepoFile("data/dev/catalog.json"))).For(null);
         var save = new DevJsonSaveFormat().Read(File.ReadAllBytes(RepoFile("data/dev/save.json")));
         var players = save.Players;
 

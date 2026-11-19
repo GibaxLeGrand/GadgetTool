@@ -25,7 +25,7 @@ internal sealed class MainForm : Form
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Background };
     private bool _closeConfirmed;
 
-    public MainForm(AppOptions options, GadgetCatalog catalog)
+    public MainForm(AppOptions options, LocalizedCatalog catalog)
     {
         _options = options;
         _bridge = new AppBridge(new AppBridgeOptions(

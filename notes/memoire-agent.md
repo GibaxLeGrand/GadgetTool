@@ -83,9 +83,18 @@ import.
   each gadget's exact cell (the tool works out an arrangement); how lower plates (2 to 5
   slots) spread over the rows; unlocked gadgets and plate level are per local player (the
   adapter can give every player the same set if the save has only one).
-- **Web UI** (`web/`, see `web/README.md`), first version 2026-11-19: runs alone in a
-  browser on a mock save; `js/backend-mock.js` mirrors the Core's rules and formats until
-  the WebView2 host exists (a test checks both produce the same share code). Placement is
+- **App** (`src/GadgetTool.App`, 2026-11-19): WinForms window, the page in WebView2 under
+  `https://gadgettool.example/` (navigation elsewhere and popups refused; dev tools and
+  browser keys only with `--dev`). The page talks to `AppBridge` (Core) with JSON messages:
+  catalog, openSave, openSample, reloadSave, save, gameRunning, exportFile, importFile.
+  Dialogs run after the WebView2 event returns (BeginInvoke). Closing with unsaved
+  presets asks first. Backups in `%LOCALAPPDATA%\GadgetTool\Backups`, never next to the
+  save (Steam Cloud). Game detection by process name uses unverified guesses. Catalog:
+  `data/dev/catalog.json` by default, `--catalog` for another (e.g. the local wiki one).
+  WebView2 package 1.0.4314.35, as in padlobby.
+- **Web UI** (`web/`, see `web/README.md`), first version 2026-11-19: `js/rules.js` keeps the
+  Core's rules in JS for instant feedback (a test checks both produce the same share code);
+  `js/host.js` talks to the app, or stands in for it in a plain browser. Placement is
   automatic (the Core's `Arrange`), as long as we do not know whether the save stores
   cells. UI text is in English, kept simple for a later translation. Preview in the Claude
   app: `gadgettool-web` in the session root's `.claude/launch.json` (python http.server on

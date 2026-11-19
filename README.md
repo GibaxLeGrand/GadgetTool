@@ -4,11 +4,11 @@ An external gadget setup tool for **Sonic Racing CrossWorlds** (PC, Steam). It l
 build, copy, paste, export and import gadget setups for every slot and every local player
 (1 to 4, offline), without launching the game.
 
-> **Status: early work, not usable on real saves yet.** The Windows app runs on a sample
-> save with made-up gadgets: rules, copy/paste, share codes, export/import and safe saving
-> all work. The game's save format is now known and the Core reads it (read only); the
-> app does not open real saves yet, and nothing writes them. See [notes/](notes/) for the
-> plan and the resume point.
+> **Status: early work, not tested in the game yet.** The app opens the game's save with a
+> data pack and the save key (neither is in this repository), shows the real gadgets and
+> icons, and writes changed presets back (only those bytes change, after a backup). Writing
+> has been checked on copies of a real save, not yet by loading a written save in the game.
+> See [notes/](notes/) for the plan and the resume point.
 
 ## Build and run
 

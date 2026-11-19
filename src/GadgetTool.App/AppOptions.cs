@@ -1,11 +1,16 @@
 namespace GadgetTool.App;
 
 /// <summary>
-/// Where things are. Options: <c>--catalog &lt;path&gt;</c> (another gadget list, for local
-/// tests) and <c>--dev</c> (the page's developer tools and context menu).
+/// Where things are. Options: <c>--catalog &lt;path&gt;</c> (another gadget list: a data pack's
+/// <c>catalog.json</c>, whose <c>icons</c> folder is used too), <c>--save-key &lt;file&gt;</c>
+/// (a file holding the game's save key: without it, only the made-up sample opens) and
+/// <c>--dev</c> (the page's developer tools and context menu).
 /// </summary>
-internal sealed record AppOptions(string WebFolder, string CatalogPath, string? SampleSavePath, string DataFolder, bool Dev)
+internal sealed record AppOptions(string WebFolder, string CatalogPath, string? SampleSavePath, string DataFolder, bool Dev, string? SaveKeyPath = null)
 {
+    /// <summary>A data pack keeps one icon per gadget next to its catalog: icons/&lt;id&gt;.png.</summary>
+    public string IconsFolder => Path.Combine(Path.GetDirectoryName(CatalogPath) ?? ".", "icons");
+
     /// <summary>Backups never go next to the save: its folder may be synced by Steam Cloud.</summary>
     public string BackupFolder => Path.Combine(DataFolder, "Backups");
 
@@ -24,6 +29,7 @@ internal sealed record AppOptions(string WebFolder, string CatalogPath, string? 
         var baseDir = AppContext.BaseDirectory;
         var catalog = Path.Combine(baseDir, "dev", "catalog.json");
         var dev = false;
+        string? saveKey = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -32,6 +38,9 @@ internal sealed record AppOptions(string WebFolder, string CatalogPath, string? 
                 case "--catalog" when i + 1 < args.Length:
                     catalog = Path.GetFullPath(args[++i]);
                     break;
+                case "--save-key" when i + 1 < args.Length:
+                    saveKey = Path.GetFullPath(args[++i]);
+                    break;
                 case "--dev":
                     dev = true;
                     break;
@@ -39,6 +48,6 @@ internal sealed record AppOptions(string WebFolder, string CatalogPath, string? 
         }
 
         var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GadgetTool");
-        return new AppOptions(Path.Combine(baseDir, "web"), catalog, Path.Combine(baseDir, "dev", "save.json"), data, dev);
+        return new AppOptions(Path.Combine(baseDir, "web"), catalog, Path.Combine(baseDir, "dev", "save.json"), data, dev, saveKey);
     }
 }

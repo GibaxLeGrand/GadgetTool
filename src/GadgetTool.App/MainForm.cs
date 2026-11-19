@@ -1,6 +1,7 @@
 using GadgetTool.Core.Bridge;
 using GadgetTool.Core.Gadgets;
 using GadgetTool.Core.Saves;
+using GadgetTool.Core.Saves.CrossWorlds;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
@@ -14,6 +15,9 @@ internal sealed class MainForm : Form
 {
     private const string PageHost = "gadgettool.example";
 
+    // The data pack's icons, on a host of their own: the page shows them as images only.
+    private const string IconHost = "icons.gadgettool.example";
+
     // Seen on 2026-11-19 (game 2.0.0): the launcher SonicRacingCrossWorlds.exe starts
     // UNION\Binaries\Win64\SonicRacingCrossWorldsSteam.exe and stays open while the game runs.
     private static readonly string[] GameProcesses = ["SonicRacingCrossWorldsSteam", "SonicRacingCrossWorlds"];
@@ -25,12 +29,19 @@ internal sealed class MainForm : Form
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Background };
     private bool _closeConfirmed;
 
-    public MainForm(AppOptions options, LocalizedCatalog catalog)
+    /// <param name="saveKey">The game's save key, or null: then only the made-up sample opens.</param>
+    public MainForm(AppOptions options, LocalizedCatalog catalog, byte[]? saveKey)
     {
         _options = options;
+        ISaveFormat format = saveKey is null
+            ? new DevJsonSaveFormat()
+            : new AnySaveFormat(new CrossWorldsSaveFormat(saveKey), new DevJsonSaveFormat());
+        var icons = Directory.Exists(options.IconsFolder)
+            ? Directory.GetFiles(options.IconsFolder, "*.png").Select(Path.GetFileNameWithoutExtension).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : [];
         _bridge = new AppBridge(new AppBridgeOptions(
             catalog,
-            new DevJsonSaveFormat(),
+            format,
             new WinFormsHostUi(this),
             new ProcessNameProbe(GameProcesses),
             TimeProvider.System,
@@ -38,7 +49,10 @@ internal sealed class MainForm : Form
             options.SampleSavePath,
             options.SampleCopyPath,
             new PresetNameStore(options.NamesFile),
-            new SeenGameStore(options.SeenGameFile)));
+            new SeenGameStore(options.SeenGameFile))
+        {
+            IconUrl = id => icons.Contains(id) ? $"https://{IconHost}/{Uri.EscapeDataString(id)}.png" : null,
+        });
 
         Text = "GadgetTool";
         BackColor = Background;
@@ -76,6 +90,8 @@ internal sealed class MainForm : Form
         core.Settings.IsZoomControlEnabled = false;
 
         core.SetVirtualHostNameToFolderMapping(PageHost, _options.WebFolder, CoreWebView2HostResourceAccessKind.Deny);
+        if (Directory.Exists(_options.IconsFolder))
+            core.SetVirtualHostNameToFolderMapping(IconHost, _options.IconsFolder, CoreWebView2HostResourceAccessKind.DenyCors);
         core.NewWindowRequested += (_, e) => e.Handled = true;
         core.NavigationStarting += (_, e) =>
         {

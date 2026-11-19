@@ -212,7 +212,8 @@ internal static class PackBuilder
     /// pixels: from <c>WBP_GadgetCustom_Sub_GadgetPlate</c>, whose gadget icons (512 pixels at a
     /// scale of 0.6, so 307) sit 374 pixels apart across, 316 down, the Super Slot's 1035 across
     /// and 151 down from the first; the first cell's centre and the title band measured on the
-    /// picture. Cells are numbered row by row, 3 per row.
+    /// picture. The Super Slot is centred on the picture's gold hole, 4 pixels right of the
+    /// widget's place (its rim showed on the right; Gibax). Cells are numbered row by row, 3 per row.
     /// </summary>
     public static JsonObject PlateGeometry() => new()
     {
@@ -221,7 +222,7 @@ internal static class PackBuilder
         ["cell"] = 307,
         ["first"] = new JsonArray(222, 348),
         ["step"] = new JsonArray(374, 316),
-        ["super"] = new JsonArray(222 + 1035, 348 + 151),
+        ["super"] = new JsonArray(222 + 1035 + 4, 348 + 151),
         ["title"] = new JsonArray(25, 85, 1400, 175),
     };
 
@@ -229,6 +230,17 @@ internal static class PackBuilder
     /// The game's icon bases written to <c>ui/</c>: file name → texture. The page picks one per
     /// gadget from its slot cost and base (see docs/DATA.md).
     /// </summary>
+    /// <summary>
+    /// The masks the game's Super Slot material (<c>M_UI_TitlePlateR_Gadget</c>) lights over the
+    /// gold base: its outline and its "G" pattern, cut to the same box as <c>base-super.png</c>
+    /// so they line up with it.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> SuperMasks { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["super-outline.png"] = IconBases + "UI_GadgetIcon_Base_01_Super_01_Mask_Outline",
+        ["super-mask.png"] = IconBases + "UI_GadgetIcon_Base_01_Super_01_Mask",
+    };
+
     public static IReadOnlyDictionary<string, string> UiTextures { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["base-1.png"] = IconBases + "UI_GadgetIcon_Base_01",

@@ -116,6 +116,10 @@ internal sealed class GameFiles : IDisposable
                     rgba[i + 3] = data[i + 3];
                 }
                 break;
+            case EPixelFormat.PF_G8:
+                // One grey byte a pixel (the Super base's light masks).
+                rgba = PngWriter.GreyToRgba(data, width, height);
+                break;
             default:
                 throw new InvalidOperationException($"'{packagePath}' is in {texture.Format}, which the extractor does not decode.");
         }

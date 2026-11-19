@@ -12,11 +12,13 @@ namespace GadgetTool.Extractor;
 /// <param name="GadgetRows">Language → rows of <c>DT_GadgetData</c>.</param>
 /// <param name="CategoryRows">Language → rows of <c>DT_GadgetCustomCategoryData</c>.</param>
 /// <param name="MiniGadgets">The ids of <c>DA_MiniGadgetList</c> (with or without the enum prefix).</param>
+/// <param name="PlateRows">Language → rows of <c>DT_GadgetPlateData</c> (the plate levels), if read.</param>
 internal sealed record GameTables(
     string DefaultLanguage,
     IReadOnlyDictionary<string, JsonObject> GadgetRows,
     IReadOnlyDictionary<string, JsonObject> CategoryRows,
-    IReadOnlyCollection<string>? MiniGadgets = null);
+    IReadOnlyCollection<string>? MiniGadgets = null,
+    IReadOnlyDictionary<string, JsonObject>? PlateRows = null);
 
 /// <summary>What the pack says about where it comes from.</summary>
 internal sealed record PackInfo(GameVersion GameVersion, string? SteamBuildId);
@@ -140,6 +142,32 @@ internal static class PackBuilder
             gadgets.Add((categoryId, Int(row, "GadgetCustomSortId"), id, json));
         }
 
+        // The plate levels: slots, Super Slot, the plate's picture (its frame in the atlas) and name.
+        var plates = new JsonArray();
+        if (tables.PlateRows is { } plateRows && plateRows.TryGetValue(tables.DefaultLanguage, out var plateDefaults))
+        {
+            foreach (var (rowName, node) in plateDefaults)
+            {
+                if (node is not JsonObject row)
+                    continue;
+                var id = Strip(Str(row, "ID") ?? rowName, PlateEnumPrefix);
+                var frame = Int(row, "BaseIndex");
+                if (frame < 0 || frame >= PlateFrames)
+                    problems.Add($"Plate '{id}' uses picture {frame}; the atlas has {PlateFrames}.");
+                var plate = new JsonObject
+                {
+                    ["id"] = id,
+                    ["slots"] = Int(row, "SlotNum"),
+                    ["superSlot"] = Bool(row, "bSpSlotOpen"),
+                    ["presets"] = Int(row, "PresetCount"),
+                    ["image"] = $"ui/plate-{frame}.png",
+                    ["name"] = Texts(plateRows, rowName, "Name", languages),
+                };
+                RemoveEmpty(plate);
+                plates.Add(plate);
+            }
+        }
+
         if (problems.Count > 0)
             throw new PackException(problems);
 
@@ -165,10 +193,37 @@ internal static class PackBuilder
                 .ThenBy(c => c.Id, StringComparer.Ordinal)
                 .Select(c => (JsonNode)c.Json)]),
             ["gadgets"] = new JsonArray([.. ordered]),
+            ["plates"] = plates.Count > 0 ? plates : null,
+            ["plateGeometry"] = plates.Count > 0 ? PlateGeometry() : null,
         };
         RemoveEmpty(catalog);
         return catalog;
     }
+
+    /// <summary>The plates' atlas: 7 pictures of 2048x1024, two per row, in <c>BaseIndex</c> order.</summary>
+    public const string PlateAtlas = "UNION/Content/01_Union/UI/Garage/GadgetCustom/Texture/UI_GadgetCustom_GadgetPlate";
+    public const int PlateFrames = 7, PlateFrameWidth = 2048, PlateFrameHeight = 1024, PlateColumns = 2;
+
+    /// <summary>What is drawn of every plate inside its 2048x1024 frame (the same box for all seven).</summary>
+    public static (int X, int Y, int Width, int Height) PlateCrop { get; } = (296, 88, 1488, 852);
+
+    /// <summary>
+    /// Where the game puts things on a plate picture cut to <see cref="PlateCrop"/>, in its
+    /// pixels: from <c>WBP_GadgetCustom_Sub_GadgetPlate</c>, whose gadget icons (512 pixels at a
+    /// scale of 0.6, so 307) sit 374 pixels apart across, 316 down, the Super Slot's 1035 across
+    /// and 151 down from the first; the first cell's centre and the title band measured on the
+    /// picture. Cells are numbered row by row, 3 per row.
+    /// </summary>
+    public static JsonObject PlateGeometry() => new()
+    {
+        ["width"] = PlateCrop.Width,
+        ["height"] = PlateCrop.Height,
+        ["cell"] = 307,
+        ["first"] = new JsonArray(222, 348),
+        ["step"] = new JsonArray(374, 316),
+        ["super"] = new JsonArray(222 + 1035, 348 + 151),
+        ["title"] = new JsonArray(25, 85, 1400, 175),
+    };
 
     /// <summary>
     /// The game's icon bases written to <c>ui/</c>: file name → texture. The page picks one per
@@ -183,7 +238,11 @@ internal static class PackBuilder
         ["base-kit-3.png"] = IconBases + "UI_GadgetIcon_Base_03_Kit_001",
         ["base-mini.png"] = IconBases + "UI_GadgetIcon_Base_01_Mini",
         ["base-super.png"] = IconBases + "UI_GadgetIcon_Base_01_Super_01",
+        ["lock.png"] = ScreenTextures + "UI_GudgetCustom_LockIcon",
+        ["plus.png"] = ScreenTextures + "UI_GudgetCustom_PlusMark",
     };
+
+    private const string ScreenTextures = "UNION/Content/01_Union/UI/Garage/GadgetCustom/Texture/";
 
     private const string IconBases = "UNION/Content/01_Union/UI/Common/GadgetIcon/Texture/";
 

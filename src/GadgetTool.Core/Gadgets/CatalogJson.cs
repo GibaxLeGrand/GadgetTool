@@ -77,14 +77,48 @@ public static class CatalogJson
                 colors[categoryId] = color;
         }
 
+        // Optional: the plate levels and where things go on their pictures, written by the extractor.
+        var plates = new List<PlateDefinition>();
+        foreach (var plate in (root["plates"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var image = Text(plate, "image");
+            if (Text(plate, "id") is not { } plateId || image is null
+                || !System.Text.RegularExpressions.Regex.IsMatch(image, "^ui/[A-Za-z0-9_.-]+\\.png$") || image.Contains("..", StringComparison.Ordinal)
+                || plate["slots"] is not JsonValue s || !s.TryGetValue(out int slots))
+                throw new FormatException("A plate has no id, slot count or picture (ui/<name>.png).");
+            var super = plate["superSlot"] is JsonValue b && b.TryGetValue(out bool sp) && sp;
+            plates.Add(new PlateDefinition(plateId, slots, super, image, Texts(plate["name"], defaultLanguage, $"plate '{plateId}' name")));
+        }
+        var geometry = root["plateGeometry"] is JsonObject geo ? ReadGeometry(geo) : null;
+
         try
         {
-            return new LocalizedCatalog(gadgets, Text(root, "source") ?? "", GameVersion.Parse(Text(root, "gameVersion")), defaultLanguage, colors);
+            return new LocalizedCatalog(gadgets, Text(root, "source") ?? "", GameVersion.Parse(Text(root, "gameVersion")), defaultLanguage, colors)
+            {
+                Plates = plates,
+                PlateGeometry = geometry,
+            };
         }
         catch (ArgumentException e)
         {
             throw new FormatException(e.Message, e);
         }
+    }
+
+    private static PlateGeometry ReadGeometry(JsonObject geo)
+    {
+        int One(string name) => geo[name] is JsonValue v && v.TryGetValue(out int i) && i >= 0 ? i
+            : throw new FormatException($"The plate geometry has no '{name}'.");
+        int[] Pair(string name, int count) => geo[name] is JsonArray a && a.Count == count
+            && a.All(x => x is JsonValue v && v.TryGetValue(out int i) && i >= 0)
+            ? [.. a.Select(x => x!.GetValue<int>())]
+            : throw new FormatException($"The plate geometry's '{name}' is not {count} numbers.");
+        var first = Pair("first", 2);
+        var step = Pair("step", 2);
+        var super = Pair("super", 2);
+        var title = Pair("title", 4);
+        return new PlateGeometry(One("width"), One("height"), One("cell"), first[0], first[1], step[0], step[1],
+            super[0], super[1], title[0], title[1], title[2], title[3]);
     }
 
     /// <summary>A string (in the default language) or an object by language code; missing is empty.</summary>

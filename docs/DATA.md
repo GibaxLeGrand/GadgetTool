@@ -16,6 +16,8 @@ data/
     catalog.json        every gadget, with the game's texts in all its languages
     icons/<id>.png      one icon per gadget (release only, never in git)
     ui/base-*.png       the game's icon bases (release only, never in git)
+    ui/plate-<n>.png    the game's plates, one per picture (release only, never in git)
+    ui/lock.png, ui/plus.png   the lock and "+" marks of the game's plate screen (same)
 ```
 
 `index.json` lets the app pick the pack for the installed game from the Steam build id in
@@ -88,6 +90,8 @@ be written: the app shows the one closest to the player's choice and falls back 
 | `steamBuildId` | top | not yet | The Steam build the pack was read from (`buildid` in `appmanifest_2486820.acf`). |
 | `languages` | top | not yet | Every language written, the default first. |
 | `plate` | gadget | not yet | The plate level the gadget needs (`Rank0` to `Rank7`). |
+| `plates` | top | yes | The plate levels: `{ id, slots, superSlot, presets, image, name }` (`image` is `ui/<name>.png`; anything else is refused). |
+| `plateGeometry` | top | yes | Where things go on a plate picture, in its pixels: `width`, `height`, `cell` (a cell's size), `first` (the first cell's centre), `step` (to the next cell across, to the next row down), `super` (the Super Slot's centre), `title` (left, top, right, bottom of the name band). |
 | `base` | gadget | yes | The base the game draws the icon on: `kit`, `mini`, or absent for the usual hexagon. |
 | `icon` | gadget | via `icons/` | The icon's asset path in the game's files; the icon itself is `icons/<id>.png`. |
 
@@ -100,7 +104,7 @@ the game's code, so GadgetTool does not guess them.
 
 ## The extractor
 
-Reads `DT_GadgetData` and `DT_GadgetCustomCategoryData` (`/Game/01_Union/Database/Gadget/`)
+Reads `DT_GadgetData`, `DT_GadgetCustomCategoryData` and `DT_GadgetPlateData` (`/Game/01_Union/Database/Gadget/`)
 once per language, with CUE4Parse, from the base game's paks only. Its rules are in
 `PackBuilder` (`src/GadgetTool.Extractor`) and its tests. It needs, all kept out of git:
 
@@ -149,12 +153,45 @@ and in the gadget list's `WBP_GadgetIcon_Cost01_Icon`: `DefaultBaseMaterial`,
 id ends with "Kit" (32 kits, all 3-slot in 2.0.0; Gibax checked in the game that the advanced
 ones, the Spin Dash kit included, have the same kit frame as the others).
 
+**Plates** (`ui/plate-<n>.png`): the plate levels come from `DT_GadgetPlateData`; the
+pictures from the atlas `UI_GadgetCustom_GadgetPlate` (`/Game/01_Union/UI/Garage/GadgetCustom/Texture/`,
+4096x4096, seven frames of 2048x1024, two per row), each cut to what is drawn (1488x852 at
+296,88 of its frame, the same for all seven). Game 2.0.0:
+
+| Plate (`id`) | Slots | Super Slot | Picture | Name (en) |
+|---|---|---|---|---|
+| `Rank0` | 2 | no | `plate-0` | NORMAL PLATE |
+| `Rank1` | 3 | no | `plate-1` | BRONZE PLATE |
+| `Rank2` | 4 | no | `plate-2` | SILVER PLATE |
+| `Rank3` | 5 | no | `plate-3` | GOLD PLATE |
+| `Rank4` | 6 | no | `plate-4` | MASTER PLATE |
+| `Rank5` to `Rank7` | 6 | yes | `plate-6` | GRAND MASTER PLATE |
+| `RentalPlate` | 6 | yes | `plate-5` | RENTAL PLATE (festival; not used by the page) |
+
+Every picture draws all six cells and the Super Slot as empty hexagons (the game's empty
+cell, a dark hexagon with a "G"). The geometry comes from `WBP_GadgetCustom_Sub_GadgetPlate`:
+cells of 307 pixels (512 scaled by 0.6), the first centred at 222,348 of the cut picture, the
+next 374 across and 316 down, the Super Slot at 1257,499, the name band at 25,85 to 1400,175.
+The page fills the cells left to right, top row first; it leaves an empty cell as the picture
+draws it (a "+" on hover), and darkens a cell the plate level does not open under the game's
+lock (`UI_GudgetCustom_LockIcon`; the "+" is `UI_GudgetCustom_PlusMark`). Without a pack, the
+page draws its own plate.
+
 As in the game (Gibax): **in the gadget list every gadget is drawn on a 1-slot base** (the
-slot cost is shown above it); **on the plate, on its real size**, a 2- or 3-slot base
-stretched by its middle to its cells' width (the pointed ends, 115 of 435 pixels on each
-side, kept as drawn). The page draws the 512-pixel icon centred over the base, at 512/435 of
-the base's height, as the two textures line up in the game. The pink "EX" bases
-(`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are not used for any gadget seen so far and are
+slot cost is shown above it); **on the plate, on its real size**. The game draws its
+1024x512 2- and 3-slot textures (`Base_02`, `Base_03` in `WBP_GadgetIcon`) at 2048x512: the
+whole drawing twice as wide, which covers 2 cells (1132 of 1135 icon pixels, a cell being 512
+and the next one 623 further at the plate's 0.6 scale) or 3 cells (1756 of 1758); the small
+hexagons at the ends of the kit frame are drawn squashed in the texture for that. The page
+draws them the same way on the game's plate, centred on their cells (on its own plate,
+without a data pack, it stretches them by the middle); the game moves the icon by 314 and 628
+for 2 and 3 slots (`GadgetIcon_Loop_Cost2`, `_Cost3`), the middle of the cells, as the page
+does. The page draws the 512-pixel icon centred over the base, at 512/435 of the base's
+height, as the two textures line up in the game. The Mini frame is the usual base at 0.8 (its
+blue edge 359 pixels wide instead of 448, its dark inside 324 instead of 407) in a silver
+ring, and the game draws a Mini gadget's icon at 0.8 too (Gibax's renders of "Lv1 Quick
+Charge" and "Mini Lv1 Quick Charge"); the page does the same. The pink "EX" bases (`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are for the festival
+rules' EX gadgets (`WBP_StatusInfo_Sub_EXGadgetDetail`, `festa_rule_gadget_ex`) and are
 not exported.
 
 Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game

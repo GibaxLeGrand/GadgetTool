@@ -365,6 +365,8 @@
     const language = resolveLanguage(languages, requested, fallback);
     const categoryColors = new Map((file.categories || []).filter((c) => c && c.id && c.color).map((c) => [c.id, c.color]));
     return {
+      plates: (file.plates || []).map((p) => ({ ...p, name: textIn(p.name, language, fallback) || "" })),
+      plateGeometry: file.plateGeometry || null,
       source: file.source || "",
       gameVersion: file.gameVersion,
       language,
@@ -406,6 +408,9 @@
       languages: source.languages || [source.language || "en"],
       // The data pack's folder (the game's icon bases in ui/), or null without a pack.
       packUrl: source.packUrl || null,
+      // The game's plate levels and where things go on their pictures (data pack only).
+      plates: source.plates || [],
+      plateGeometry: source.plateGeometry || null,
       gadgets,
       byId: idMap(gadgets),
       byHash: new Map(gadgets.map((g) => [shareHash(g.id), g])),

@@ -37,16 +37,18 @@ try
 
     var gadgets = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
     var categories = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+    var plates = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
     foreach (var language in languages)
     {
         Console.WriteLine($"Reading the tables in '{language}'...");
         gadgets[language] = game.TableRows(GameFiles.GadgetTable, language);
         categories[language] = game.TableRows(GameFiles.CategoryTable, language);
+        plates[language] = game.TableRows(GameFiles.PlateTable, language);
     }
 
     var steamBuildId = SteamBuildId(options["paks"]);
     var catalog = PackBuilder.BuildCatalog(
-        new GameTables(defaultLanguage, gadgets, categories, game.MiniGadgets()),
+        new GameTables(defaultLanguage, gadgets, categories, game.MiniGadgets(), plates),
         new PackInfo(version, steamBuildId));
     var text = catalog.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
@@ -153,7 +155,27 @@ static bool WriteUi(GameFiles game, string folder)
             ok = false;
         }
     }
-    Console.WriteLine($"Wrote {PackBuilder.UiTextures.Count} icon bases to {folder}");
+    Console.WriteLine($"Wrote {PackBuilder.UiTextures.Count} icon bases and marks to {folder}");
+
+    // The plates: each 2048x1024 picture of the atlas, cut to what is drawn.
+    try
+    {
+        var atlas = game.TextureRgba(PackBuilder.PlateAtlas);
+        var (cx, cy, cw, ch) = PackBuilder.PlateCrop;
+        for (var i = 0; i < PackBuilder.PlateFrames; i++)
+        {
+            var fx = i % PackBuilder.PlateColumns * PackBuilder.PlateFrameWidth;
+            var fy = i / PackBuilder.PlateColumns * PackBuilder.PlateFrameHeight;
+            var cut = PngWriter.Crop(atlas.Width, atlas.Height, atlas.Rgba, fx + cx, fy + cy, cw, ch);
+            File.WriteAllBytes(Path.Combine(folder, $"plate-{i}.png"), PngWriter.Encode(cw, ch, cut));
+        }
+        Console.WriteLine($"Wrote {PackBuilder.PlateFrames} plates to {folder}");
+    }
+    catch (Exception e)
+    {
+        Console.Error.WriteLine($"  plates ({PackBuilder.PlateAtlas}): {e.Message}");
+        ok = false;
+    }
     return ok;
 }
 

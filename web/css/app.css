@@ -710,10 +710,14 @@ body.theme-game {
 /* The game draws a 512-pixel icon over a base whose drawn part is 435 pixels high, both centred. */
 .art-icon { position: absolute; left: 50%; top: 50%; height: calc(var(--u-h) * 512 / 435); width: auto; aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%); }
-/* A 2- or 3-slot base fills its cells: stretched by its middle, the pointed ends (the first
-   115 pixels of 435 on each side) kept as drawn. */
+/* The Mini frame is the usual base at 0.8 (its blue edge 359 pixels wide instead of 448) inside
+   a silver ring; the game draws the icon at 0.8 as well, inside the ring. */
+.art.mini .art-icon { height: calc(var(--u-h) * 512 / 435 * 0.8); }
+/* On our own plate a 2- or 3-slot base fills its cells: stretched by its middle, the pointed
+   ends (the first 115 pixels of 435 on each side) kept as drawn. */
 .art.long { width: 100%; box-sizing: border-box; border: solid transparent; border-width: 0 calc(var(--u-h) * 115 / 435);
   border-image: var(--base) 0 115 fill / 0 calc(var(--u-h) * 115 / 435) stretch; }
+.art.long > .art-base { display: none; }
 .hex.block.art-block > .art.long { position: absolute; inset: 0; height: 100%; }
 .hex.block.art-block, .theme-game .hex.block.art-block { background: none; clip-path: none; overflow: visible; }
 .hex.block.art-block.bad .art { filter: drop-shadow(0 0 6px var(--bad)) drop-shadow(0 0 2px var(--bad)); }
@@ -721,3 +725,29 @@ body.theme-game {
 .g-tile.art-tile { width: auto; min-width: 112px; }
 .g-tile.equipped .art { filter: drop-shadow(0 0 5px #8fc0ff) drop-shadow(0 0 2px #ffffff); }
 .g-tile.locked .art { filter: grayscale(1); }
+
+/* The game's own plate (data pack): its picture, with the gadgets, empty and locked cells
+   placed where the game puts them. Lengths come from the picture's pixels (--tpx is one). */
+.plate.textured { background: none; clip-path: none; padding: 0; width: 100%; max-width: 860px; container-type: inline-size; }
+.plate.textured.over .tplate { filter: drop-shadow(0 0 10px var(--accent)); }
+.tplate { position: relative; width: 100%; background-position: center; background-size: 100% 100%; background-repeat: no-repeat; }
+.grid.tcells { position: absolute; inset: 0; display: block; }
+.tplate .on-plate, .tcell, .tsuper { position: absolute; display: flex; align-items: center; justify-content: center; }
+/* On the game's plate, as the game draws it: the whole 2- or 3-slot base, twice as wide as
+   the texture, centred on its cells (2 cells: 1132 of 1135 icon pixels; 3 cells: 1756 of 1758). */
+.tplate .hex.block.art-block > .art.long { inset: 0; width: auto; height: auto; border: 0; border-image: none; }
+.tplate .art.long > .art-base { display: block; position: absolute; left: 50%; top: 50%; height: var(--u-h); width: auto;
+  max-width: none; transform: translate(-50%, -50%) scaleX(2); }
+.tcell .plus-mark, .tsuper .plus-mark { position: absolute; width: 26%; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.tcell.empty:hover .plus-mark, .tsuper:hover .plus-mark, .tsuper.over .plus-mark { opacity: .95; }
+.tcell.locked img { position: relative; width: 30%; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+/* The picture's hexagon hole, darkened: flat top and bottom, points left and right. */
+.tcell.locked .shade { position: absolute; left: 0; right: 0; top: 7%; bottom: 7%; background: rgba(0, 0, 0, .55);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); pointer-events: none; }
+.tsuper .hex.block { width: 100%; height: 100%; }
+.tplate-title { position: absolute; display: flex; align-items: center; justify-content: center; white-space: nowrap;
+  font-size: calc(var(--tpx) * 56); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  background: linear-gradient(180deg, #fff0b0, #e2ae2d 60%, #b9861b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* In the game view the plate's slot would shrink to its content, which a container has none of. */
+.game #gamePlateSlot { align-self: stretch; }
+.game .plate.textured { max-width: 760px; }

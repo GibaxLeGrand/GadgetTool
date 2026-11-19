@@ -43,7 +43,7 @@ synced by Steam Cloud).
 | `src/GadgetTool.App` | The Windows window: the page in WebView2, file dialogs, game detection. |
 | `src/GadgetTool.Extractor` | The maintainer's tool that reads the game's gadget tables and writes a data pack (see [docs/DATA.md](docs/DATA.md)). |
 | `web/` | The editor's interface (see [web/README.md](web/README.md)). |
-| `data/dev/` | Made-up gadgets and a sample save, until the game's files are read. |
+| `data/dev/` | Made-up gadgets and a sample save, for working without the game's data (with a data pack, the sample is made from the game's gadgets). The sample is read-only: no saving, importing or exporting. |
 | `tests/` | Unit tests for the Core and the extractor. |
 
 ## Planned features

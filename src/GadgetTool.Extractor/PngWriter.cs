@@ -138,6 +138,17 @@ internal static class PngWriter
         return moved;
     }
 
+    /// <summary>A rectangle of the pixels (it must lie inside the image).</summary>
+    public static byte[] Crop(int width, int height, byte[] rgba, int x, int y, int w, int h)
+    {
+        if (x < 0 || y < 0 || w < 1 || h < 1 || x + w > width || y + h > height)
+            throw new ArgumentOutOfRangeException(nameof(x), $"{w}x{h} at {x},{y} is not inside {width}x{height}.");
+        var cut = new byte[w * h * 4];
+        for (var row = 0; row < h; row++)
+            Array.Copy(rgba, ((y + row) * width + x) * 4, cut, row * w * 4, w * 4);
+        return cut;
+    }
+
     /// <summary>The PNG (zlib) CRC-32 of <paramref name="data"/>, continuing from <paramref name="crc"/>.</summary>
     internal static uint Crc(uint crc, ReadOnlySpan<byte> data)
     {

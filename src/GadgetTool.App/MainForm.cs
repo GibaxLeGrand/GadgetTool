@@ -58,6 +58,8 @@ internal sealed class MainForm : Form
         {
             IconUrl = id => icons.Contains(id) ? $"https://{PackHost}/icons/{Uri.EscapeDataString(id)}.png" : null,
             PackUrl = Directory.Exists(Path.Combine(options.PackFolder, "ui")) ? $"https://{PackHost}" : null,
+            // With the game's data, the sample save is made from it (the bundled one has made-up gadgets).
+            SampleFromCatalog = catalog.Plates.Count > 0,
         });
 
         Text = "GadgetTool";

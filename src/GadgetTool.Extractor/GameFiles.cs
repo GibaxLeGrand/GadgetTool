@@ -1,5 +1,8 @@
 using System.Text.Json.Nodes;
+using AssetRipper.TextureDecoder.Bc;
+using AssetRipper.TextureDecoder.Rgb.Formats;
 using CUE4Parse.Compression;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider.Usmap;
@@ -63,6 +66,62 @@ internal sealed class GameFiles : IDisposable
             ?? throw new InvalidOperationException($"'{tablePath}' did not load.");
         return json.OfType<JsonObject>().Select(e => e["Rows"]).OfType<JsonObject>().FirstOrDefault()
             ?? throw new InvalidOperationException($"'{tablePath}' is not a DataTable.");
+    }
+
+    /// <summary>
+    /// A texture's largest mip as 8-bit RGBA, rows from the top. BC7 (the game's UI icons), BC3,
+    /// BC1 and uncompressed BGRA are decoded; anything else is refused.
+    /// </summary>
+    /// <param name="packagePath">The texture's package, e.g. <c>UNION/Content/.../UI_Icon</c>.</param>
+    public (int Width, int Height, byte[] Rgba) TextureRgba(string packagePath)
+    {
+        var texture = _provider.LoadPackage(ActualPath(packagePath)).GetExports().OfType<UTexture2D>().FirstOrDefault()
+            ?? throw new InvalidOperationException($"'{packagePath}' is not a texture.");
+        var mip = texture.GetFirstMip()
+            ?? throw new InvalidOperationException($"'{packagePath}' has no pixel data.");
+        var data = mip.BulkData?.Data
+            ?? throw new InvalidOperationException($"'{packagePath}' has no pixel data.");
+        int width = mip.SizeX, height = mip.SizeY;
+
+        byte[] rgba;
+        switch (texture.Format)
+        {
+            case EPixelFormat.PF_BC7:
+                Bc7.Decompress<ColorRGBA<byte>, byte>(data, width, height, out rgba);
+                break;
+            case EPixelFormat.PF_DXT5:
+                Bc3.Decompress<ColorRGBA<byte>, byte>(data, width, height, out rgba);
+                break;
+            case EPixelFormat.PF_DXT1:
+                Bc1.Decompress<ColorRGBA<byte>, byte>(data, width, height, out rgba);
+                break;
+            case EPixelFormat.PF_B8G8R8A8:
+                rgba = new byte[width * height * 4];
+                for (var i = 0; i + 3 < rgba.Length && i + 3 < data.Length; i += 4)
+                {
+                    rgba[i] = data[i + 2];
+                    rgba[i + 1] = data[i + 1];
+                    rgba[i + 2] = data[i];
+                    rgba[i + 3] = data[i + 3];
+                }
+                break;
+            default:
+                throw new InvalidOperationException($"'{packagePath}' is in {texture.Format}, which the extractor does not decode.");
+        }
+        return (width, height, rgba);
+    }
+
+    /// <summary>
+    /// The package's path as the paks spell it. The game's tables do not always use the same
+    /// letter case as the files (an icon is named "..._run60" in the table, "..._Run60" in the
+    /// paks); Unreal ignores case, so this does too.
+    /// </summary>
+    private string ActualPath(string packagePath)
+    {
+        if (_provider.Files.ContainsKey(packagePath + ".uasset"))
+            return packagePath;
+        var match = _provider.Files.Keys.FirstOrDefault(k => k.Equals(packagePath + ".uasset", StringComparison.OrdinalIgnoreCase));
+        return match is null ? packagePath : match[..^".uasset".Length];
     }
 
     public void Dispose() => _provider.Dispose();

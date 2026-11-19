@@ -13,6 +13,8 @@
     <PackageReference Include="CUE4Parse" Version="1.2.2.202611" />
     <!-- CUE4Parse brings 9.0.0, which has a known denial-of-service advisory (GHSA-73j8-2gch-69rq). -->
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.15" />
+    <!-- BC7 and other GPU texture formats, for the gadget icons (MIT, managed, no dependencies). -->
+    <PackageReference Include="AssetRipper.TextureDecoder" Version="2.6.3" />
     <ProjectReference Include="..\GadgetTool.Core\GadgetTool.Core.csproj" />
   </ItemGroup>
 

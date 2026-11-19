@@ -279,8 +279,16 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   spelling, so the code format and the page's codes did not change.
 - Descriptions hold game placeholders (`{GetRing}`, filled from gadget parameters) and
   rich-text tags (`<SpStyle>...</>`): the app shows them raw for now.
-- Not done yet: icon export (textures, `icon` paths are in the pack), `index.json`, the
-  catalog reader for the extra fields (`superEffect`, `categories`...).
+- **Icons** (same day, branch `extractor/icons`): `icons/<id>.png` for all 148 gadgets,
+  512x512 RGBA, about 12 MB. The textures are BC7 (`PF_BC7`, UI group), decoded with
+  AssetRipper.TextureDecoder 2.6.3 (MIT, managed, no dependencies; the decoder
+  CUE4Parse-Conversion itself uses, without that package's ImageSharp, SkiaSharp and glTF
+  baggage); `PngWriter` writes the PNG with no imaging library. Icons live in five content
+  folders (`/Game/01_Union` to `/Game/06_Union`); asset paths in the table do not always
+  match the paks' letter case (`..._run60` against `..._Run60`), so files are looked up
+  ignoring case. Thumbnails (`ThumbnailTexture`, 256x256) are not exported.
+- Not done yet: `index.json`, the catalog reader for the extra fields (`superEffect`,
+  `categories`...), the icons in the app.
 
 ## The app on the real save (2026-11-19, branch `app/real-save`)
 

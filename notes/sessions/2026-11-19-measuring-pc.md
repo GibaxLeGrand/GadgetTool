@@ -55,6 +55,8 @@ the branch `core/crossworlds-save-read`. **The resume point is at the end of thi
   `../memoire-agent.md` (section "The extractor") and `docs/DATA.md`, which also shows how
   to run it. On the measuring PC the Oodle dll and the pak key sit with the modding tools,
   outside this repository; the 2.0 mappings are in `extracted/mappings/`.
+- PR #2 (extractor) was merged by Gibax. Icons (branch `extractor/icons`): the extractor now
+  writes `icons/<id>.png` for all 148 gadgets (512x512, about 12 MB) into the local pack.
 
 ## RESUME POINT
 
@@ -62,11 +64,10 @@ Ask Gibax before launching anything or touching a real save.
 
 1. Gibax decides how the public tool gets the save key (advice: in the release's data
    packs, never in git).
-2. Icons: export each gadget's icon (`icon` path in the pack) to `icons/<id>.png`.
-3. App: open the real save (find `app.sav` under `%APPDATA%\SEGA\SonicRacingCrossWorlds\steam`,
-   load the key from the local file for now), read only, with the extracted catalog. First
-   make the Core compare gadget ids ignoring case (see `../memoire-agent.md`).
-4. Writing: rebuild the gadget arrays with cells (`SlotIndex` = first cell, Super Slot = 6),
+2. App: open the real save (find `app.sav` under `%APPDATA%\SEGA\SonicRacingCrossWorlds\steam`,
+   load the key from the local file for now), read only, with the extracted catalog and its
+   icons. First make the Core compare gadget ids ignoring case (see `../memoire-agent.md`).
+3. Writing: rebuild the gadget arrays with cells (`SlotIndex` = first cell, Super Slot = 6),
    re-encrypt, test on a **copy** of the save in the game (Gibax's OK), then the real one with
    a backup.
-5. First release with the 2.0.0 pack (icons included) on the releases page.
+4. First release with the 2.0.0 pack (icons included) on the releases page.

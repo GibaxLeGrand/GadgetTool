@@ -375,6 +375,7 @@
         category: textIn(g.category, language, fallback) || "",
         categoryId: g.categoryId || textIn(g.category, fallback, fallback) || "",
         description: textIn(g.description, language, fallback),
+        icon: g.icon || null,
       })),
     };
   }

@@ -33,9 +33,13 @@ internal sealed class MainForm : Form
     public MainForm(AppOptions options, LocalizedCatalog catalog, byte[]? saveKey)
     {
         _options = options;
+        // Writing the game's save places gadgets in cells, from their slot costs (the same in every language).
+        var gadgets = catalog.For(catalog.DefaultLanguage);
         ISaveFormat format = saveKey is null
             ? new DevJsonSaveFormat()
-            : new AnySaveFormat(new CrossWorldsSaveFormat(saveKey), new DevJsonSaveFormat());
+            : new AnySaveFormat(
+                new CrossWorldsSaveFormat(saveKey, id => gadgets.TryGet(id, out var g) ? g.SlotCost : null),
+                new DevJsonSaveFormat());
         var icons = Directory.Exists(options.IconsFolder)
             ? Directory.GetFiles(options.IconsFolder, "*.png").Select(Path.GetFileNameWithoutExtension).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];

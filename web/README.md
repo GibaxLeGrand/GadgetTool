@@ -9,8 +9,10 @@ a plain browser for work on the page.
 | `js/rules.js` | The Core's rules in JS, for instant feedback while editing (same share-code bytes and JSON format; a C# test checks the codes match). The app checks every rule again before writing. |
 | `js/host.js` | Where data and files come from. In the app: calls to `AppBridge` through WebView2 messages (`{ id, method, params }`). In a browser: a stand-in that never writes anything. |
 
-Icons are placeholders (initials on the category's colour). The real ones will be read
-from the game's files at runtime; no game asset is ever committed.
+Icons come from the data pack: the app serves the pack's `icons/<id>.png` (next to the
+`--catalog` file) and sends each gadget's URL with the catalog. Without a pack, and in a plain
+browser, icons are placeholders (initials on the category's colour). No game asset is ever
+committed.
 
 ## In a browser
 

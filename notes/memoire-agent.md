@@ -288,7 +288,44 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   match the paks' letter case (`..._run60` against `..._Run60`), so files are looked up
   ignoring case. Thumbnails (`ThumbnailTexture`, 256x256) are not exported.
 - Not done yet: `index.json`, the catalog reader for the extra fields (`superEffect`,
-  `categories`...), the icons in the app.
+  `categories`...). The icons are shown by the app (next section).
+
+## The app on the real save (2026-11-19, branch `app/real-save`)
+
+- `--catalog <pack>\<version>\catalog.json` (its `icons` folder is used too) and
+  `--save-key <file>` (any text holding the 64 hex digits; `CrossWorldsSaveFormat.KeyFromText`).
+  With a key, saves open through `AnySaveFormat` (game save, else the made-up sample); without
+  one, only the sample opens. The open dialog starts in the game's save folder.
+- Icons: the app maps the pack's `icons` folder to `https://icons.gadgettool.example/`
+  (`DenyCors`: images only) and sends each gadget's URL with the catalog (`IconUrl` in
+  `AppBridgeOptions`); the page shows the image, else the old placeholder.
+- Checked on the measuring PC, reading a **copy** of a real save with the extracted 2.0.0
+  catalog through `SaveSession` (`extracted/tools/check_session.cs`): 4 players, Grand Master,
+  123 unlocked gadgets all in the catalog, French names, and **no rule problem on any of the
+  40 presets** (slot costs, rows, Super Slot, unlocked). The model's assumptions hold on real
+  data. The app itself was not launched (Gibax's OK needed).
+- Saving a real save was refused on this branch; writing comes with the next one.
+
+## Writing the real save (2026-11-19, branch `core/crossworlds-save-write`)
+
+- `CrossWorldsSaveFormat.Write` rebuilds only `GadgetPresetDataLists` and
+  `SpGadgetPresetDataLists`, and inside them only the presets whose rows (or Super Slot)
+  changed; the two lists are spliced back and the size of `_UserMachineAssemblyData` is
+  patched. Every other byte stays. `GvasSerializer` writes the subset the lists use.
+- Safety: refuses an unchecked game version (`WritableRomVersions` = { 20000 }); refuses to
+  write unless the unchanged lists serialize back byte for byte; copies the entry layout
+  from an entry the save has; reads the result back and checks every preset before
+  returning it; unchanged setups return the original bytes.
+- Cells: `PlateLayout.Arrange` picks rows (biggest gadgets first), then cells left to right
+  in the plate's order, row r starting at cell 3r; Super Slot at cell 6. An emptied preset
+  is written as six `NonGadget` cells, as the game does; no Super Slot = empty list. Only
+  the Super Slot changed → the rows keep the game's cells.
+- The format needs slot costs to place gadgets (`slotCost`, given by the app from the
+  catalog).
+- Checked on the measuring PC with **copies** only (`extracted/tools/check_write.cs`,
+  output in `samples/W`, git-ignored): unchanged setups give the identical file; changing
+  P2 B and P3 J's Super Slot changes exactly those presets; before the lists only the 4-byte
+  size field differs, everything after them is identical. Not loaded in the game yet.
 
 ## Open questions
 

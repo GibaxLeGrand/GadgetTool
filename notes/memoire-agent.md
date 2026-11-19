@@ -90,6 +90,13 @@ import.
   cells. UI text is in English, kept simple for a later translation. Preview in the Claude
   app: `gadgettool-web` in the session root's `.claude/launch.json` (python http.server on
   127.0.0.1:8766), then open `/web/`.
+- **Plate look (Gibax, 2026-11-19): shapes never stretch.** There are exactly three gadget
+  shapes. One slot is the Super Slot's hexagon (flat top and bottom, pointed ends, 132x116 at
+  full size). The 2- and 3-slot shapes are the same hexagon made longer by whole slots: same
+  height, same pointed ends. Empty and locked slots use the 1-slot shape. The plate itself
+  follows the game's screenshot: a title band ("GRAND MASTER PLATE"), two rows of three, and
+  the gold Super Slot on the right. Small windows scale the unit down; they never change its
+  proportions.
 - Local test catalog: `extracted/wiki-catalog.js` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

@@ -20,6 +20,7 @@ internal sealed class GameFiles : IDisposable
 {
     public const string GadgetTable = "UNION/Content/01_Union/Database/Gadget/DT_GadgetData";
     public const string CategoryTable = "UNION/Content/01_Union/Database/Gadget/DT_GadgetCustomCategoryData";
+    public const string MiniGadgetList = "UNION/Content/01_Union/Database/Gadget/DA_MiniGadgetList";
     private const string LocalizationFolder = "UNION/Content/Localization/Game/";
 
     private readonly DefaultFileProvider _provider;
@@ -66,6 +67,15 @@ internal sealed class GameFiles : IDisposable
             ?? throw new InvalidOperationException($"'{tablePath}' did not load.");
         return json.OfType<JsonObject>().Select(e => e["Rows"]).OfType<JsonObject>().FirstOrDefault()
             ?? throw new InvalidOperationException($"'{tablePath}' is not a DataTable.");
+    }
+
+    /// <summary>The gadget ids of <c>DA_MiniGadgetList</c> ("EGadgetId::..."), which get the Mini icon base.</summary>
+    public IReadOnlyList<string> MiniGadgets()
+    {
+        var exports = _provider.LoadPackage(MiniGadgetList).GetExports();
+        var json = JsonNode.Parse(JsonConvert.SerializeObject(exports)) as JsonArray;
+        return [.. (json?.OfType<JsonObject>().Select(e => e["Properties"]?["MiniGadgetList"]).OfType<JsonArray>().FirstOrDefault() ?? [])
+            .Select(v => (string?)v).OfType<string>().Distinct(StringComparer.Ordinal)];
     }
 
     /// <summary>

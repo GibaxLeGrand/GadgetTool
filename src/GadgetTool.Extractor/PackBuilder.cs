@@ -11,10 +11,12 @@ namespace GadgetTool.Extractor;
 /// <param name="DefaultLanguage">The language whose rows give everything but the texts.</param>
 /// <param name="GadgetRows">Language → rows of <c>DT_GadgetData</c>.</param>
 /// <param name="CategoryRows">Language → rows of <c>DT_GadgetCustomCategoryData</c>.</param>
+/// <param name="MiniGadgets">The ids of <c>DA_MiniGadgetList</c> (with or without the enum prefix).</param>
 internal sealed record GameTables(
     string DefaultLanguage,
     IReadOnlyDictionary<string, JsonObject> GadgetRows,
-    IReadOnlyDictionary<string, JsonObject> CategoryRows);
+    IReadOnlyDictionary<string, JsonObject> CategoryRows,
+    IReadOnlyCollection<string>? MiniGadgets = null);
 
 /// <summary>What the pack says about where it comes from.</summary>
 internal sealed record PackInfo(GameVersion GameVersion, string? SteamBuildId);
@@ -45,6 +47,10 @@ internal sealed class PackException(IReadOnlyList<string> problems)
 /// the game (<c>{GetRing}</c>) and rich-text tags (<c>&lt;SpStyle&gt;...&lt;/&gt;</c>).</item>
 /// <item>Only categories that hold a gadget are listed.</item>
 /// <item>Ids hold only ASCII letters, digits and '_': each names its icon file, <c>icons/&lt;id&gt;.png</c>.</item>
+/// <item>The icon's base (the frame the game draws it on): <c>mini</c> for the gadgets of
+/// <c>DA_MiniGadgetList</c>, <c>kit</c> for the categories whose id ends with "Kit" (all
+/// 3-slot in 2.0.0), none for the others. The game picks it in native code
+/// (<c>EquipmentGadgetIcon::SetIconBaseShape</c>); this rule matches its material lists.</item>
 /// </list>
 /// </remarks>
 internal static class PackBuilder
@@ -87,6 +93,7 @@ internal static class PackBuilder
 
         var gadgets = new List<(string CategoryId, int Sort, string Id, JsonObject Json)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var mini = (tables.MiniGadgets ?? []).Select(id => Strip(id, GadgetEnumPrefix)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var (rowName, node) in gadgetRows)
         {
             if (node is not JsonObject row || !Bool(row, "bIsEnabled"))
@@ -123,6 +130,7 @@ internal static class PackBuilder
                 ["description"] = Texts(tables.GadgetRows, rowName, "Explanation", languages),
                 ["superEffect"] = Texts(tables.GadgetRows, rowName, "ExplanationSpecial", languages),
                 ["plate"] = Strip(Str(row, "plateId") ?? "", PlateEnumPrefix),
+                ["base"] = mini.Contains(id) ? "mini" : categoryId.EndsWith("Kit", StringComparison.Ordinal) ? "kit" : null,
                 ["icon"] = AssetPath((row["IconTexture"] as JsonObject)?["AssetPathName"]),
             };
             RemoveEmpty(json);
@@ -158,6 +166,23 @@ internal static class PackBuilder
         RemoveEmpty(catalog);
         return catalog;
     }
+
+    /// <summary>
+    /// The game's icon bases written to <c>ui/</c>: file name → texture. The page picks one per
+    /// gadget from its slot cost and base (see docs/DATA.md).
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> UiTextures { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["base-1.png"] = IconBases + "UI_GadgetIcon_Base_01",
+        ["base-2.png"] = IconBases + "UI_GadgetIcon_Base_02",
+        ["base-3.png"] = IconBases + "UI_GadgetIcon_Base_03",
+        ["base-kit-1.png"] = IconBases + "UI_GadgetIcon_Base_01_Kit_001",
+        ["base-kit-3.png"] = IconBases + "UI_GadgetIcon_Base_03_Kit_001",
+        ["base-mini.png"] = IconBases + "UI_GadgetIcon_Base_01_Mini",
+        ["base-super.png"] = IconBases + "UI_GadgetIcon_Base_01_Super_01",
+    };
+
+    private const string IconBases = "UNION/Content/01_Union/UI/Common/GadgetIcon/Texture/";
 
     /// <summary>The pak path of a game asset: "/Game/01_Union/X" → "UNION/Content/01_Union/X".</summary>
     public static string PackagePath(string gamePath)

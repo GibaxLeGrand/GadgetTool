@@ -46,7 +46,7 @@ try
 
     var steamBuildId = SteamBuildId(options["paks"]);
     var catalog = PackBuilder.BuildCatalog(
-        new GameTables(defaultLanguage, gadgets, categories),
+        new GameTables(defaultLanguage, gadgets, categories, game.MiniGadgets()),
         new PackInfo(version, steamBuildId));
     var text = catalog.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
@@ -64,7 +64,7 @@ try
 
     var iconsOk = true;
     if (!options.TryGetValue("icons", out var icons) || !bool.TryParse(icons, out var writeIcons) || writeIcons)
-        iconsOk = WriteIcons(game, catalog, Path.Combine(folder, "icons"));
+        iconsOk = WriteIcons(game, catalog, Path.Combine(folder, "icons")) & WriteUi(game, Path.Combine(folder, "ui"));
 
     // index.json next to the version folders: this pack's files and hashes, other packs kept.
     var indexPath = Path.Combine(options["out"], "index.json");
@@ -129,6 +129,31 @@ static bool WriteIcons(GameFiles game, JsonObject catalog, string folder)
     foreach (var problem in problems)
         Console.Error.WriteLine("  " + problem);
     return problems.Count == 0;
+}
+
+// The game's icon bases as ui\<name>.png; true when every one was written.
+static bool WriteUi(GameFiles game, string folder)
+{
+    Directory.CreateDirectory(folder);
+    var ok = true;
+    foreach (var (name, texture) in PackBuilder.UiTextures)
+    {
+        try
+        {
+            // The game's bases sit on bigger transparent canvases (the 2-slot one on a 3-slot
+            // canvas): written cut to what is drawn.
+            var full = game.TextureRgba(texture);
+            var (width, height, rgba) = PngWriter.TrimTransparent(full.Width, full.Height, full.Rgba);
+            File.WriteAllBytes(Path.Combine(folder, name), PngWriter.Encode(width, height, rgba));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"  {name} ({texture}): {e.Message}");
+            ok = false;
+        }
+    }
+    Console.WriteLine($"Wrote {PackBuilder.UiTextures.Count} icon bases to {folder}");
+    return ok;
 }
 
 // The key itself, or the first key found in a file (so it stays out of the command line and logs).

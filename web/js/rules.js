@@ -329,12 +329,60 @@
 
   // ---- Data from the host ------------------------------------------------------------
 
+  // ---- Languages of the game's texts (LocalizedCatalog in the Core) -------------------
+
+  /** A text that is either a string (default language) or { lang: text }. */
+  function textIn(value, lang, fallback) {
+    if (value == null) return null;
+    if (typeof value === "string") return value;
+    const keys = Object.keys(value);
+    const find = (l) => keys.find((k) => k.toLowerCase() === l.toLowerCase());
+    const base = lang.split("-")[0];
+    const key = find(lang) || find(base) || find(fallback) || keys[0];
+    return key ? value[key] : null;
+  }
+
+  /** The closest language the data has: same, then base ("fr-FR" -> "fr", "zh-CN" -> "zh-Hans"), then default. */
+  function resolveLanguage(languages, requested, fallback) {
+    if (!requested) return fallback;
+    const req = requested.toLowerCase();
+    const base = req.split("-")[0];
+    return languages.find((l) => l.toLowerCase() === req)
+      || languages.find((l) => l.toLowerCase() === base || l.toLowerCase().startsWith(base + "-"))
+      || fallback;
+  }
+
+  /** A catalog file (gadgettool.catalog) in one language, as AppBridge's "catalog" sends it. */
+  function localizeCatalog(file, requested) {
+    const fallback = file.defaultLanguage || "en";
+    const others = new Set();
+    for (const g of file.gadgets) if (g.name && typeof g.name === "object") Object.keys(g.name).forEach((l) => others.add(l));
+    const languages = [fallback, ...[...others].filter((l) => l.toLowerCase() !== fallback.toLowerCase()).sort()];
+    const language = resolveLanguage(languages, requested, fallback);
+    return {
+      source: file.source || "",
+      gameVersion: file.gameVersion,
+      language,
+      languages,
+      gadgets: file.gadgets.map((g) => ({
+        id: g.id,
+        slotCost: g.slotCost,
+        name: textIn(g.name, language, fallback) || g.id,
+        category: textIn(g.category, language, fallback) || "",
+        categoryId: g.categoryId || textIn(g.category, fallback, fallback) || "",
+        description: textIn(g.description, language, fallback),
+      })),
+    };
+  }
+
   /** A catalog as the host sends it ({ source, gadgets }) with lookups. */
   function makeCatalog(source) {
     const gadgets = source.gadgets;
     return {
       source: source.source || "",
       gameVersion: parseVersion(source.gameVersion),
+      language: source.language || "en",
+      languages: source.languages || [source.language || "en"],
       gadgets,
       byId: new Map(gadgets.map((g) => [g.id, g])),
       byHash: new Map(gadgets.map((g) => [shareHash(g.id), g])),
@@ -369,7 +417,7 @@
   window.GT = {
     arrange, slotCount, capacity, used, levelName, validate, describe, paste, withPlate, samePlate, clonePlate,
     encodeShareCode, decodeShareCode, FILE_EXTENSION, exportJson, importJson, makeCatalog, fromSaveDto, toSaveRequest,
-    parseVersion, versionText, ageOf, compareGadgets, describeChange,
+    parseVersion, versionText, ageOf, compareGadgets, describeChange, localizeCatalog,
     presetLetter: (i) => String.fromCharCode(65 + i),
   };
 })();

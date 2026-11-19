@@ -111,7 +111,9 @@
     return (words.length === 1 ? words[0].slice(0, 2) : words.slice(0, 2).map((w) => w[0]).join("")).toUpperCase();
   }
   const icon = (g, small) =>
-    h("span", { class: "icon" + (small ? " small" : ""), style: `--h:${hue(g.category)}`, "aria-hidden": "true" }, initials(g.name));
+    h("span", { class: "icon" + (small ? " small" : ""), style: `--h:${hue(categoryKey(g))}`, "aria-hidden": "true" }, initials(g.name));
+  /** The category's key: the same in every language, so colours and groups do not move. */
+  const categoryKey = (g) => g.categoryId || g.category || "Other";
   const pips = (cost) => h("span", { class: "pips", title: `${cost} slot${cost > 1 ? "s" : ""}` },
     [1, 2, 3].map((i) => h("i", { class: i <= cost ? "on" : "" })));
   const tip = (g) => `${g.name} · ${g.slotCost} slot${g.slotCost > 1 ? "s" : ""} · ${g.category}\n${g.description || ""}`;
@@ -469,12 +471,12 @@
     const groups = new Map();
     for (const g of catalog.gadgets) {
       if (text && !g.name.toLowerCase().includes(text) && !(g.description || "").toLowerCase().includes(text)) continue;
-      const category = g.category || "Other";
-      if (!groups.has(category)) groups.set(category, []);
-      groups.get(category).push(g);
+      const key = categoryKey(g);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(g);
     }
-    const rows = [...groups].map(([category, gadgets]) => h("div", { class: "g-cat", style: `--h:${hue(category)}` },
-      h("div", { class: "g-cat-name" }, category),
+    const rows = [...groups].map(([key, gadgets]) => h("div", { class: "g-cat", style: `--h:${hue(key)}` },
+      h("div", { class: "g-cat-name" }, gadgets[0].category || "Other"),
       h("div", { class: "g-row" }, gadgets.map((g) => gameTile(g, p, pl)))));
     $("#gameGadgets").replaceChildren(...(rows.length ? rows : [h("p", { class: "g-none" }, "No gadget matches.")]));
   }
@@ -1064,16 +1066,45 @@
     });
   }
 
+  // ---- Language of the game's texts (gadget names, categories, descriptions) -----------
+
+  function loadLanguage() {
+    try { return localStorage.getItem("gadgettool.language") || navigator.language || "en"; } catch { return navigator.language || "en"; }
+  }
+
+  /** Each language under its own name ("français", "日本語"...). */
+  function languageName(code) {
+    try { return new Intl.DisplayNames([code], { type: "language" }).of(code) || code; } catch { return code; }
+  }
+
+  function fillLanguages() {
+    const select = $("#langSelect");
+    select.hidden = catalog.languages.length < 2;
+    select.replaceChildren(...catalog.languages.map((l) => h("option", { value: l }, languageName(l))));
+    select.value = catalog.language;
+  }
+
+  async function loadCatalog(language) {
+    catalog = GT.makeCatalog(await host.catalog(language));
+    fillLanguages();
+    fillCategories();
+    state.filter.category = "";
+  }
+
   async function start() {
     wire();
     render();
     try {
-      catalog = GT.makeCatalog(await host.catalog());
+      await loadCatalog(loadLanguage());
     } catch (e) {
       $("#welcomeError").textContent = `The gadget list could not be read: ${e.message}`;
       return;
     }
-    fillCategories();
+    $("#langSelect").onchange = async (e) => {
+      try { localStorage.setItem("gadgettool.language", e.target.value); } catch { /* comfort only */ }
+      try { await loadCatalog(e.target.value); } catch (err) { toast(err.message, "bad"); }
+      render();
+    };
     render();
     watchGame();
     // In a browser preview, start on the sample right away.

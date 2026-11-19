@@ -23,7 +23,7 @@
     });
     return {
       kind: "app",
-      catalog: () => call("catalog"),
+      catalog: (language) => call("catalog", { language }),
       openSave: () => call("openSave"),
       openSample: () => call("openSample"),
       reloadSave: () => call("reloadSave"),
@@ -86,9 +86,11 @@
     return {
       kind: "browser",
       // A local test catalog (git-ignored) wins over the made-up one; its sample save is then generated.
-      async catalog() {
-        try { this.local = await fetchJson("../extracted/wiki-catalog.json"); return this.local; }
-        catch { this.local = null; return fetchJson("../data/dev/catalog.json"); }
+      async catalog(language) {
+        let file;
+        try { file = this.local = await fetchJson("../extracted/wiki-catalog.json"); }
+        catch { this.local = null; file = await fetchJson("../data/dev/catalog.json"); }
+        return GT.localizeCatalog(file, language);
       },
       async openSample() {
         if (this.local) {

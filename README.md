@@ -4,15 +4,26 @@ An external gadget setup tool for **Sonic Racing CrossWorlds** (PC, Steam). It l
 build, copy, paste, export and import gadget setups for every slot and every local player
 (1 to 4, offline), without launching the game.
 
-> **Status: idea stage, nothing is coded yet.** The save format is not known yet; the first
-> step is to analyse real save files. See [notes/](notes/) for the plan and the resume point.
+> **Status: early work, not usable yet.** The core (rules, copy/paste, share codes,
+> export/import, safe saving) is written and tested on made-up data. The game's save format
+> is not known yet; the next step is to analyse real save files. See [notes/](notes/) for
+> the plan and the resume point.
+
+## Build
+
+Needs the .NET 10 SDK.
+
+```
+dotnet build GadgetTool.slnx
+dotnet test GadgetTool.slnx
+```
 
 ## Planned features
 
-- Read the save and show every gadget plate, for local players 1 to 4.
-- Edit a plate: only gadgets you have already unlocked, respecting each gadget's slot cost
-  and the plate's slot count.
-- Copy and paste a plate to any slot or any player.
+- Read the save and show every gadget preset, for local players 1 to 4.
+- Edit a preset: only gadgets you have already unlocked, respecting each gadget's slot cost,
+  the plate's rows and the Super Slot (1-slot gadgets only).
+- Copy and paste a preset to any other preset, of any player, or to many at once.
 - Export and import setups as JSON or as a short text code you can paste in a chat.
 
 ## Safety rules the tool will follow

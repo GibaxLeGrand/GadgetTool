@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- GadgetTool.exe: a window that shows web/ in WebView2 and answers the page through
+       AppBridge (GadgetTool.Core). Windows only; the WebView2 runtime is part of Windows 11. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <AssemblyName>GadgetTool</AssemblyName>
+    <RootNamespace>GadgetTool.App</RootNamespace>
+    <!-- The WebView2 package also carries its WPF control, whose WindowsBase clashes with .NET 10's; unused here. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <ProjectReference Include="..\GadgetTool.Core\GadgetTool.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The page, and the made-up catalog and sample save used until the game's files are read. -->
+  <ItemGroup>
+    <None Include="..\..\web\**\*" Exclude="..\..\web\README.md" LinkBase="web" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\data\dev\*.json" LinkBase="dev" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

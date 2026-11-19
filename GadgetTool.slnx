@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/GadgetTool.App/GadgetTool.App.csproj" />
     <Project Path="src/GadgetTool.Core/GadgetTool.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">

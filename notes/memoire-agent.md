@@ -376,6 +376,19 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   atlas frame goes with which plate level (`DT_GadgetPlateData`, `M_UI_FlipBook_GadgetPlate`),
   and whether the list uses the icons or the thumbnails. Then use the plate texture itself.
 
+## Icons on the game's bases (2026-11-19, branch `pack/icon-bases`)
+
+- Gibax sent a screenshot of an icon in the game: the art over a dark hexagon with the "G"
+  pattern and a blue edge, "je sais que tu peux récup ça". Those are the game's icon bases
+  (`UI_GadgetIcon_Base_*`, see `docs/DATA.md`): exported to the pack's `ui/`, cut to what is
+  drawn; each gadget gets `base` (`kit` / `mini` / none) in the catalog; the page draws the
+  icon centred on its base, the Super Slot on the gold one. Checked in the Claude app's
+  browser on the stand-in host: matches the screenshot for a 1-slot gadget.
+- To check with Gibax in the game: the kit rule (category ending with "Kit"), and where the
+  game puts the icon on a 2- or 3-slot base (centred here).
+- The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
+  images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

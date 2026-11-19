@@ -38,7 +38,8 @@ public sealed class SaveSession
         var bytes = File.ReadAllBytes(path);
         if (!format.CanRead(bytes))
             throw new SaveFormatException($"'{System.IO.Path.GetFileName(path)}' is not a {format.Name} save.");
-        return new SaveSession(path, format, catalog, bytes, format.Read(bytes));
+        // Ids ignore letter case; inside the tool they are spelled as the catalog spells them.
+        return new SaveSession(path, format, catalog, bytes, format.Read(bytes).WithCatalogSpelling(catalog));
     }
 
     public string Path { get; }

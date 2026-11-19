@@ -58,7 +58,7 @@ public static class PlateValidator
         ArgumentNullException.ThrowIfNull(catalog);
 
         var issues = new List<PlateIssue>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(GadgetIds.Comparer);
         var costs = new List<int>();
 
         foreach (var id in plate.GadgetIds)
@@ -86,7 +86,7 @@ public static class PlateValidator
 
     /// <summary>Slots the known gadgets in the plate's rows take (unknown ids count for nothing).</summary>
     public static int SlotsUsed(GadgetPlate plate, GadgetCatalog catalog) =>
-        plate.GadgetIds.Distinct(StringComparer.Ordinal)
+        plate.GadgetIds.Distinct(GadgetIds.Comparer)
             .Sum(id => catalog.TryGet(id, out var g) ? g.SlotCost : 0);
 
     /// <summary>Records the issues of one gadget; returns its definition when it counts toward the slots.</summary>

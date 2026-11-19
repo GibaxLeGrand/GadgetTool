@@ -30,7 +30,7 @@ public static class GameChanges
         ArgumentNullException.ThrowIfNull(now);
 
         var changes = new List<GadgetChange>();
-        foreach (var (id, name, cost) in then.DistinctBy(g => g.Id, StringComparer.Ordinal))
+        foreach (var (id, name, cost) in then.DistinctBy(g => g.Id, GadgetIds.Comparer))
         {
             if (!now.TryGet(id, out var gadget))
                 changes.Add(new GadgetChange(id, name, cost, null));

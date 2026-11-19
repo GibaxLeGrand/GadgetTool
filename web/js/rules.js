@@ -57,11 +57,12 @@
     const seen = new Set();
     const costs = [];
     const check = (id) => {
-      if (seen.has(id)) { issues.push({ kind: "Duplicate", id }); return null; }
-      seen.add(id);
+      const key = idKey(id);
+      if (seen.has(key)) { issues.push({ kind: "Duplicate", id }); return null; }
+      seen.add(key);
       const g = catalog.byId.get(id);
       if (!g) { issues.push({ kind: "UnknownGadget", id }); return null; }
-      if (!player.unlocked.has(id)) issues.push({ kind: "NotUnlocked", id });
+      if (!player.unlocked.has(g.id)) issues.push({ kind: "NotUnlocked", id });
       return g;
     };
     for (const id of plate.gadgets) {
@@ -112,15 +113,18 @@
   function keepEquippable(plate, player, catalog) {
     const kept = [], dropped = [], seen = new Set();
     for (const id of plate.gadgets) {
-      if (!seen.has(id) && catalog.byId.has(id) && player.unlocked.has(id)) { kept.push(id); seen.add(id); }
+      const g = catalog.byId.get(id); // ids ignore case: keep the catalog's spelling
+      if (g && !seen.has(idKey(id)) && player.unlocked.has(g.id)) { kept.push(g.id); seen.add(idKey(id)); }
       else dropped.push(id);
     }
     let sup = plate.super ?? null;
     if (sup) {
       const g = catalog.byId.get(sup);
-      if (!(player.superSlot && !seen.has(sup) && g && g.slotCost === 1 && player.unlocked.has(sup))) {
+      if (!(player.superSlot && !seen.has(idKey(sup)) && g && g.slotCost === 1 && player.unlocked.has(g.id))) {
         dropped.push(sup);
         sup = null;
+      } else {
+        sup = g.id;
       }
     }
     return { plate: { gadgets: kept, super: sup }, dropped };
@@ -226,7 +230,7 @@
     bytes.set(version, 3);
     const costAt = HEADER + 4 * ids.length;
     ids.forEach((id, i) => {
-      view.setUint32(HEADER + 4 * i, shareHash(id), true);
+      view.setUint32(HEADER + 4 * i, shareHash(catalog.byId.get(id)?.id ?? id), true);
       const cost = catalog.byId.get(id)?.slotCost ?? 0;
       bytes[costAt + (i >> 2)] |= (cost >= 1 && cost <= 3 ? cost : 0) << (2 * (i % 4));
     });
@@ -375,6 +379,17 @@
     };
   }
 
+  /** Gadget ids are Unreal names and ignore letter case, as in the Core (GadgetIds). */
+  function idKey(id) {
+    return String(id).toLowerCase();
+  }
+
+  /** Gadgets by id, ignoring letter case. */
+  function idMap(gadgets) {
+    const map = new Map(gadgets.map((g) => [idKey(g.id), g]));
+    return { get: (id) => map.get(idKey(id)), has: (id) => map.has(idKey(id)) };
+  }
+
   /** A catalog as the host sends it ({ source, gadgets }) with lookups. */
   function makeCatalog(source) {
     const gadgets = source.gadgets;
@@ -384,7 +399,7 @@
       language: source.language || "en",
       languages: source.languages || [source.language || "en"],
       gadgets,
-      byId: new Map(gadgets.map((g) => [g.id, g])),
+      byId: idMap(gadgets),
       byHash: new Map(gadgets.map((g) => [shareHash(g.id), g])),
       categories: [...new Set(gadgets.map((g) => g.category || "Other"))],
     };

@@ -79,7 +79,7 @@ public static class SetupEditor
     {
         var kept = new List<string>();
         var dropped = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(GadgetIds.Comparer);
 
         foreach (var id in plate.GadgetIds)
         {

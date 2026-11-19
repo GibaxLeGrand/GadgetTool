@@ -25,8 +25,8 @@ public sealed class GadgetPlate
     public GadgetPlate WithSuperGadget(string? superGadgetId) => new(GadgetIds, superGadgetId);
 
     public bool SameGadgetsAs(GadgetPlate other) =>
-        string.Equals(SuperGadgetId, other.SuperGadgetId, StringComparison.Ordinal)
-        && GadgetIds.SequenceEqual(other.GadgetIds, StringComparer.Ordinal);
+        Gadgets.GadgetIds.Same(SuperGadgetId, other.SuperGadgetId)
+        && GadgetIds.SequenceEqual(other.GadgetIds, Gadgets.GadgetIds.Comparer);
 
     public override string ToString() =>
         $"[{string.Join(", ", GadgetIds)}]{(SuperGadgetId is null ? "" : $" super: {SuperGadgetId}")}";

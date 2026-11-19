@@ -119,8 +119,11 @@ import.
     tabs A–J over a blue plate, a description box, gadgets in rows by category with the slot
     cost on top (his screenshot is of an older version with A–E and no Super Slot).
   - More UI changes to come from him, to copy the game's look more closely.
-  - Then (same day): **keep the colour code of the two modes** (Lists: dark; Game style:
-    blue plate, pastel category rows). **Plate visuals: take them from the game's files**
+  - Then (same day): **colours are a theme of their own**, separate from the view: he
+    likes the game colours and wants them as something to turn on or off. Setting
+    "Colours": per view (default: dark lists, game-coloured game style), dark, or the
+    game's (blue backdrop and plate, gold/blue tabs, light category rows), for either view;
+    remembered in browser storage. **Plate visuals: take them from the game's files**
     (FModel, on a machine with the game) rather than drawing them in CSS; read at runtime
     from the player's install, never committed.
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw

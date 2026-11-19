@@ -44,9 +44,10 @@ try
         categories[language] = game.TableRows(GameFiles.CategoryTable, language);
     }
 
+    var steamBuildId = SteamBuildId(options["paks"]);
     var catalog = PackBuilder.BuildCatalog(
-        new GameTables(defaultLanguage, gadgets, categories),
-        new PackInfo(version, SteamBuildId(options["paks"])));
+        new GameTables(defaultLanguage, gadgets, categories, game.MiniGadgets()),
+        new PackInfo(version, steamBuildId));
     var text = catalog.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
     // The app must be able to read what was written.
@@ -61,9 +62,17 @@ try
     Console.WriteLine($"Wrote {file}");
     Console.WriteLine($"  {check.For(defaultLanguage).Gadgets.Count} gadgets ({string.Join(", ", costs)}), {check.Languages.Count} languages: {string.Join(", ", check.Languages)}");
 
+    var iconsOk = true;
     if (!options.TryGetValue("icons", out var icons) || !bool.TryParse(icons, out var writeIcons) || writeIcons)
-        return WriteIcons(game, catalog, Path.Combine(folder, "icons")) ? 0 : 1;
-    return 0;
+        iconsOk = WriteIcons(game, catalog, Path.Combine(folder, "icons")) & WriteUi(game, Path.Combine(folder, "ui"));
+
+    // index.json next to the version folders: this pack's files and hashes, other packs kept.
+    var indexPath = Path.Combine(options["out"], "index.json");
+    var index = File.Exists(indexPath) ? PackIndex.Parse(File.ReadAllText(indexPath)) : PackIndex.Empty;
+    var entry = PackBuilder.IndexEntry(version, steamBuildId, folder);
+    File.WriteAllText(indexPath, index.With(entry).ToJson());
+    Console.WriteLine($"Wrote {indexPath} ({entry.Files.Count} files for {version}, Steam build {steamBuildId ?? "unknown"})");
+    return iconsOk ? 0 : 1;
 }
 catch (Exception e) when (e is ArgumentException or KeyNotFoundException or IOException or PackException or InvalidOperationException or FormatException)
 {
@@ -122,6 +131,31 @@ static bool WriteIcons(GameFiles game, JsonObject catalog, string folder)
     return problems.Count == 0;
 }
 
+// The game's icon bases as ui\<name>.png; true when every one was written.
+static bool WriteUi(GameFiles game, string folder)
+{
+    Directory.CreateDirectory(folder);
+    var ok = true;
+    foreach (var (name, texture) in PackBuilder.UiTextures)
+    {
+        try
+        {
+            // The game's bases sit on bigger transparent canvases (the 2-slot one on a 3-slot
+            // canvas): written cut to what is drawn.
+            var full = game.TextureRgba(texture);
+            var (width, height, rgba) = PngWriter.TrimTransparent(full.Width, full.Height, full.Rgba);
+            File.WriteAllBytes(Path.Combine(folder, name), PngWriter.Encode(width, height, rgba));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"  {name} ({texture}): {e.Message}");
+            ok = false;
+        }
+    }
+    Console.WriteLine($"Wrote {PackBuilder.UiTextures.Count} icon bases to {folder}");
+    return ok;
+}
+
 // The key itself, or the first key found in a file (so it stays out of the command line and logs).
 static string AesKey(string value)
 {
@@ -137,7 +171,7 @@ static string? SteamBuildId(string paksFolder)
     {
         var manifest = Path.Combine(dir.FullName, "appmanifest_2486820.acf");
         if (File.Exists(manifest))
-            return PackBuilder.SteamBuildId(File.ReadAllText(manifest));
+            return SteamInstall.BuildId(File.ReadAllText(manifest));
     }
     return null;
 }

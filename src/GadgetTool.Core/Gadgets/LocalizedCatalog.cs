@@ -37,13 +37,17 @@ public sealed class LocalizedText
 
 /// <summary>A gadget with its texts in every language the data has.</summary>
 /// <param name="CategoryId">A key for the category that does not change with the language (grouping, colours).</param>
+/// <param name="SuperEffect">What it does in the Super Slot; null or empty when it has no Super effect.</param>
+/// <param name="Base">The frame the game draws the icon on: "kit", "mini", or null for the usual one.</param>
 public sealed record LocalizedGadget(
     string Id,
     int SlotCost,
     LocalizedText Name,
     string CategoryId,
     LocalizedText Category,
-    LocalizedText Description);
+    LocalizedText Description,
+    LocalizedText? SuperEffect = null,
+    string? Base = null);
 
 /// <summary>
 /// The gadget list with the game's texts in all its languages, as the extractor writes it.
@@ -55,9 +59,12 @@ public sealed class LocalizedCatalog
     private readonly IReadOnlyList<LocalizedGadget> _gadgets;
     private readonly Dictionary<string, GadgetCatalog> _byLanguage = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <param name="categoryColors">The game's colour per category id ("#RRGGBB"), when the data has them.</param>
     /// <exception cref="ArgumentException">An id is empty or repeated, or a slot cost is below 1.</exception>
-    public LocalizedCatalog(IEnumerable<LocalizedGadget> gadgets, string source, GameVersion gameVersion, string defaultLanguage)
+    public LocalizedCatalog(IEnumerable<LocalizedGadget> gadgets, string source, GameVersion gameVersion, string defaultLanguage,
+        IReadOnlyDictionary<string, string>? categoryColors = null)
     {
+        CategoryColors = categoryColors ?? new Dictionary<string, string>();
         ArgumentNullException.ThrowIfNull(gadgets);
         ArgumentException.ThrowIfNullOrWhiteSpace(defaultLanguage);
 
@@ -92,6 +99,9 @@ public sealed class LocalizedCatalog
     public GameVersion GameVersion { get; }
 
     public string DefaultLanguage { get; }
+
+    /// <summary>The game's colour per category id ("#RRGGBB"); empty when the data has none.</summary>
+    public IReadOnlyDictionary<string, string> CategoryColors { get; }
 
     /// <summary>Every language the gadget names exist in, the default first.</summary>
     public IReadOnlyList<string> Languages { get; }
@@ -128,7 +138,10 @@ public sealed class LocalizedCatalog
                 g.SlotCost,
                 g.Category.Get(lang, DefaultLanguage) ?? g.CategoryId,
                 g.Description.Get(lang, DefaultLanguage),
-                g.CategoryId)),
+                g.CategoryId,
+                g.SuperEffect?.Get(lang, DefaultLanguage),
+                CategoryColors.GetValueOrDefault(g.CategoryId),
+                g.Base)),
             Source, GameVersion);
         _byLanguage[lang] = catalog;
         return catalog;

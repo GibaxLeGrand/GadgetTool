@@ -61,6 +61,35 @@ internal static class PngWriter
         stream.Write(four);
     }
 
+    /// <summary>
+    /// The pixels cut down to the box that holds every pixel more opaque than
+    /// <paramref name="alphaThreshold"/>; an image with none comes back as it is.
+    /// </summary>
+    public static (int Width, int Height, byte[] Rgba) TrimTransparent(int width, int height, byte[] rgba, byte alphaThreshold = 8)
+    {
+        int left = width, top = height, right = -1, bottom = -1;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                if (rgba[(y * width + x) * 4 + 3] <= alphaThreshold)
+                    continue;
+                left = Math.Min(left, x);
+                right = Math.Max(right, x);
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+        if (right < 0)
+            return (width, height, rgba);
+
+        int w = right - left + 1, h = bottom - top + 1;
+        var cut = new byte[w * h * 4];
+        for (var y = 0; y < h; y++)
+            Array.Copy(rgba, ((top + y) * width + left) * 4, cut, y * w * 4, w * 4);
+        return (w, h, cut);
+    }
+
     /// <summary>The PNG (zlib) CRC-32 of <paramref name="data"/>, continuing from <paramref name="crc"/>.</summary>
     internal static uint Crc(uint crc, ReadOnlySpan<byte> data)
     {

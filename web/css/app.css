@@ -500,6 +500,10 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
 }
 .g-info-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
 .g-info-text { font-size: 15px; line-height: 1.35; }
+.g-info-super { font-size: 14px; line-height: 1.35; margin-top: 6px; opacity: .9; }
+/* A value the game fills in ({GetRing}...): GadgetTool does not know it. */
+.ph { display: inline-block; min-width: 1.1em; padding: 0 .25em; border-radius: 4px; text-align: center;
+  background: rgba(127,127,127,.25); font-weight: 700; cursor: help; }
 .g-left .issues { width: 100%; max-width: 760px; }
 
 .g-right { display: flex; flex-direction: column; min-height: 0; }
@@ -626,7 +630,7 @@ body.theme-game {
 .theme-game .g-arrow { color: #1a1a1a; background: #fff; border-color: #cfd6e6; box-shadow: none; }
 
 .theme-game .g-panel { border: 3px solid #d7dce8; background: #c9cfdd; }
-.theme-game .g-cat { background: hsl(var(--h) 70% 90%); }
+.theme-game .g-cat { background: var(--cat, hsl(var(--h) 70% 90%)); }
 .theme-game .g-cat-name { background: #6b7184; }
 .theme-game .g-row { scrollbar-color: #8a90a3 transparent; }
 .theme-game .g-none { color: #333; }
@@ -691,3 +695,24 @@ body.theme-game {
   .library { grid-column: 1 / -1; border-left: none; border-top: 1px solid var(--line); max-height: 45vh; }
   body { overflow: auto; }
 }
+
+/* As in the game: the gadget's art fills its hexagon, with no name under it. */
+.hex .inner.art { padding: 0; gap: 0; }
+.hex .inner.art .icon.img,
+.g-hex.art .icon.img { width: calc(var(--u-h) + 6px); height: calc(var(--u-h) + 6px); }
+.g-tile:has(.g-hex.art) { padding-bottom: 8px; }
+
+/* As in the game: the gadget's icon drawn on the game's own base, from the data pack
+   (1-slot hexagon, 2- and 3-slot shapes, kit and mini frames, the gold Super Slot). */
+.art { position: relative; display: inline-block; flex: 0 0 auto; height: var(--u-h); }
+.art-base, .art-icon { pointer-events: none; }
+.art-base { display: block; height: 100%; width: auto; }
+/* The game draws a 512-pixel icon over a base whose drawn part is 435 pixels high, both centred. */
+.art-icon { position: absolute; left: 50%; top: 50%; height: calc(var(--u-h) * 512 / 435); width: auto; aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%); }
+.hex.block.art-block, .theme-game .hex.block.art-block { background: none; clip-path: none; overflow: visible; }
+.hex.block.art-block.bad .art { filter: drop-shadow(0 0 6px var(--bad)) drop-shadow(0 0 2px var(--bad)); }
+.hex.block.art-block::before { display: none; }
+.g-tile.art-tile { width: auto; min-width: 112px; }
+.g-tile.equipped .art { filter: drop-shadow(0 0 5px #8fc0ff) drop-shadow(0 0 2px #ffffff); }
+.g-tile.locked .art { filter: grayscale(1); }

@@ -15,8 +15,9 @@ internal sealed class MainForm : Form
 {
     private const string PageHost = "gadgettool.example";
 
-    // The data pack's icons, on a host of their own: the page shows them as images only.
-    private const string IconHost = "icons.gadgettool.example";
+    // The data pack (icons, the game's icon bases), on a host of its own: the page shows its
+    // files as images only.
+    private const string PackHost = "pack.gadgettool.example";
 
     // Seen on 2026-11-19 (game 2.0.0): the launcher SonicRacingCrossWorlds.exe starts
     // UNION\Binaries\Win64\SonicRacingCrossWorldsSteam.exe and stays open while the game runs.
@@ -55,7 +56,8 @@ internal sealed class MainForm : Form
             new PresetNameStore(options.NamesFile),
             new SeenGameStore(options.SeenGameFile))
         {
-            IconUrl = id => icons.Contains(id) ? $"https://{IconHost}/{Uri.EscapeDataString(id)}.png" : null,
+            IconUrl = id => icons.Contains(id) ? $"https://{PackHost}/icons/{Uri.EscapeDataString(id)}.png" : null,
+            PackUrl = Directory.Exists(Path.Combine(options.PackFolder, "ui")) ? $"https://{PackHost}" : null,
         });
 
         Text = "GadgetTool";
@@ -94,8 +96,8 @@ internal sealed class MainForm : Form
         core.Settings.IsZoomControlEnabled = false;
 
         core.SetVirtualHostNameToFolderMapping(PageHost, _options.WebFolder, CoreWebView2HostResourceAccessKind.Deny);
-        if (Directory.Exists(_options.IconsFolder))
-            core.SetVirtualHostNameToFolderMapping(IconHost, _options.IconsFolder, CoreWebView2HostResourceAccessKind.DenyCors);
+        if (Directory.Exists(_options.PackFolder))
+            core.SetVirtualHostNameToFolderMapping(PackHost, _options.PackFolder, CoreWebView2HostResourceAccessKind.DenyCors);
         core.NewWindowRequested += (_, e) => e.Handled = true;
         core.NavigationStarting += (_, e) =>
         {

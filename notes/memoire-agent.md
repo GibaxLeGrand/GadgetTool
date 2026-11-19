@@ -327,6 +327,68 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   P2 B and P3 J's Super Slot changes exactly those presets; before the lists only the 4-byte
   size field differs, everything after them is identical. Not loaded in the game yet.
 
+## Super effects, category colours, game texts (2026-11-19, branch `app/super-effects-colours`)
+
+- `CatalogJson` reads `superEffect` (texts by language) and the category colours
+  (`categories[].color`, `#RRGGBB` only); `GadgetDefinition` gains `SuperEffect` and
+  `CategoryColor`; the bridge sends both. The page shows the Super effect in the tooltip and
+  in the game-style info box, and the "game colours" theme paints category rows with the
+  game's colours.
+- Game texts: `<SpStyle>...</>` shown in bold; `{Placeholders}` shown as a "?" with a
+  tooltip. Their values exist in `DA_GadgetParameter2` (e.g. `BonusDashPanelMap`: Default /
+  Mini / Special, `RingNumLv1..4`), but which value a text shows is the game's code: **not
+  guessed**. Open question for Gibax: read a few texts in the game (e.g. "Dash Panel Bounty"
+  and its Mini) to see what numbers the game shows, then decide whether to fill them.
+- Checked in the Claude app's browser on the page's stand-in host (python http.server, the
+  pack catalog copied to the git-ignored `extracted/wiki-catalog.json`): French texts,
+  "?" placeholders, bold Super effect, game colours on category rows; no console error.
+
+## Data pack index (2026-11-19, branch `data/pack-index`)
+
+- `PackIndex` (Core) reads and writes `index.json` (`gadgettool.packs`, version 1): per pack
+  the game version, the Steam builds it was made from, its folder and every file's SHA-256.
+  `Pick(build)` gives the pack made from that build, else the newest (the app warns).
+  `SteamInstall` (Core, read only) finds the installed build: `libraryfolders.vdf` → the
+  library holding app 2486820 → `appmanifest_2486820.acf` → `buildid`.
+- The extractor writes/updates `index.json` after the catalog and icons. The app takes
+  `--data <folder>` or a `data` folder next to its exe; `--catalog` still wins. Steam's folder
+  comes from `HKCU\Software\Valve\Steam\SteamPath` (read only), else Program Files (x86).
+- Checked on the measuring PC: the local pack's index lists 149 files for 2.0.0, and the
+  installed build 24996408 picks it exactly (`extracted/tools/check_pick.cs`).
+
+## The game's gadget screen (2026-11-19)
+
+- Gibax (from work): "les icônes sont pas comme ça in game", "fais vraiment comme in game":
+  in the game the gadget's art fills its hexagon and no name is written in it. Done for the
+  plate and the gadget list (names stay in tooltips and the info box; placeholders keep
+  them).
+- The game's gadget screen textures are in `/Game/01_Union/UI/Garage/GadgetCustom/Texture/`:
+  `UI_GadgetCustom_GadgetPlate` (4096x4096 atlas of 7 plates: light blue, bronze, silver,
+  gold, dark blue, festival pink/blue, black and gold; each with 2 rows of 3 hexagon cells
+  and the gold Super Slot hexagon on the right), `UI_GadgetCustom_GadgetBase`,
+  `UI_GudgetCustom_BG`, `UI_GudgetCustom_HexagonCursor`, `UI_GudgetCustom_LockIcon`,
+  `UI_GudgetCustom_PlusMark`, tabs (`..._TabBtnBase_*`, `..._TabPict`). Each gadget also has
+  a 256x256 thumbnail (`ThumbnailTexture`, `GadgetTmb/`): a picture on a sky background,
+  apparently for the gadget details, not the hexagons. Exported locally for a look
+  (`extracted/ui_textures/`, `extracted/tools/export_textures.cs`).
+- **Open (needs Gibax, a screenshot of the game's gadget screen with 2- and 3-slot gadgets
+  on the plate)**: how the game draws a multi-slot gadget over separate hexagon cells, which
+  atlas frame goes with which plate level (`DT_GadgetPlateData`, `M_UI_FlipBook_GadgetPlate`),
+  and whether the list uses the icons or the thumbnails. Then use the plate texture itself.
+
+## Icons on the game's bases (2026-11-19, branch `pack/icon-bases`)
+
+- Gibax sent a screenshot of an icon in the game: the art over a dark hexagon with the "G"
+  pattern and a blue edge, "je sais que tu peux récup ça". Those are the game's icon bases
+  (`UI_GadgetIcon_Base_*`, see `docs/DATA.md`): exported to the pack's `ui/`, cut to what is
+  drawn; each gadget gets `base` (`kit` / `mini` / none) in the catalog; the page draws the
+  icon centred on its base, the Super Slot on the gold one. Checked in the Claude app's
+  browser on the stand-in host: matches the screenshot for a 1-slot gadget.
+- To check with Gibax in the game: the kit rule (category ending with "Kit"), and where the
+  game puts the icon on a 2- or 3-slot base (centred here).
+- The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
+  images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

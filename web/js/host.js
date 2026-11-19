@@ -90,7 +90,15 @@
         let file;
         try { file = this.local = await fetchJson("../extracted/wiki-catalog.json"); }
         catch { this.local = null; file = await fetchJson("../data/dev/catalog.json"); }
-        return GT.localizeCatalog(file, language);
+        const catalog = GT.localizeCatalog(file, language);
+        // A local copy of a data pack's catalog: its icons and the game's icon bases sit in the
+        // local pack (git-ignored).
+        if (this.local && file.gameVersion) {
+          catalog.packUrl = `../extracted/pack/${encodeURIComponent(file.gameVersion)}`;
+          for (const g of catalog.gadgets)
+            g.icon = g.icon || `${catalog.packUrl}/icons/${encodeURIComponent(g.id)}.png`;
+        }
+        return catalog;
       },
       async openSample() {
         if (this.local) {

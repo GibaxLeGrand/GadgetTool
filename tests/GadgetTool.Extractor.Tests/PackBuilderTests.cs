@@ -147,6 +147,31 @@ public class PackBuilderTests
     }
 
     [Fact]
+    public void Each_gadget_gets_the_base_the_game_draws_it_on()
+    {
+        JsonObject Rows3(string lang) => Rows(
+            ("EGadgetId::Speed_A", Gadget("Speed_A", 1, "Speed", 1, "Speed A")),
+            ("EGadgetId::Speed_Mini", Gadget("Speed_Mini", 1, "Speed", 2, "Speed Mini")),
+            ("EGadgetId::Big_Kit", Gadget("Big_Kit", 3, "StarterKit", 3, "Big Kit")));
+        JsonObject Categories3(string lang) => Rows(
+            ("EGadgetCategory::Speed", Category("Speed", 1)),
+            ("EGadgetCategory::StarterKit", Category("Starter Kit", 2)));
+        var tables = Tables(Rows3, Categories3) with { MiniGadgets = ["EGadgetId::Speed_Mini"] };
+
+        var gadgets = PackBuilder.BuildCatalog(tables, Info)["gadgets"]!.AsArray().Cast<JsonObject>().ToDictionary(g => (string)g["id"]!);
+
+        Assert.Null(gadgets["Speed_A"]["base"]);
+        Assert.Equal("mini", (string?)gadgets["Speed_Mini"]["base"]);
+        Assert.Equal("kit", (string?)gadgets["Big_Kit"]["base"]);
+    }
+
+    [Fact]
+    public void The_ui_folder_holds_every_base_the_page_asks_for() =>
+        Assert.Equal(
+            ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png"],
+            PackBuilder.UiTextures.Keys.Order(StringComparer.Ordinal));
+
+    [Fact]
     public void Maps_game_asset_paths_to_pak_paths()
     {
         Assert.Equal("UNION/Content/05_Union/UI/Icon_A", PackBuilder.PackagePath("/Game/05_Union/UI/Icon_A"));
@@ -154,11 +179,27 @@ public class PackBuilderTests
     }
 
     [Fact]
-    public void Reads_the_steam_build_id_from_the_app_manifest()
+    public void The_index_entry_lists_every_file_of_the_pack_with_its_hash()
     {
-        const string manifest = "\"AppState\"\n{\n\t\"appid\"\t\t\"1\"\n\t\"buildid\"\t\t\"24680\"\n\t\"LastOwner\"\t\t\"0\"\n}\n";
+        var folder = Path.Combine(Path.GetTempPath(), "gadgettool-pack-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(folder, "icons"));
+            File.WriteAllText(Path.Combine(folder, "catalog.json"), "{}");
+            File.WriteAllBytes(Path.Combine(folder, "icons", "Speed_A.png"), [1, 2, 3]);
 
-        Assert.Equal("24680", PackBuilder.SteamBuildId(manifest));
-        Assert.Null(PackBuilder.SteamBuildId("\"AppState\" { }"));
+            var entry = PackBuilder.IndexEntry(new GameVersion(2, 0, 0), "12345", folder);
+
+            Assert.Equal("2.0.0", entry.Folder);
+            Assert.Equal(["12345"], entry.SteamBuildIds);
+            Assert.Equal(["catalog.json", "icons/Speed_A.png"], entry.Files.Keys.Order(StringComparer.Ordinal));
+            // SHA-256 of "{}" and of the bytes 1, 2, 3.
+            Assert.Equal("44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a", entry.Files["catalog.json"]);
+            Assert.Equal("039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81", entry.Files["icons/Speed_A.png"]);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 }

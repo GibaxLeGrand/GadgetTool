@@ -22,13 +22,16 @@ dotnet run --project src/GadgetTool.App
 
 `--catalog <file>` uses another gadget list; `--dev` turns on the page's developer tools.
 
-To open the game's own save (read only for now), give the app a data pack's catalog (its
-`icons` folder next to it is used too) and a file holding the game's save key; neither is in
-this repository (see [docs/DATA.md](docs/DATA.md)):
+To open the game's own save, give the app the data packs (it picks the one made for your
+game's Steam build) and a file holding the game's save key; neither is in this repository
+(see [docs/DATA.md](docs/DATA.md)):
 
 ```
-dotnet run --project src/GadgetTool.App -- --catalog <pack>\2.0.0\catalog.json --save-key <key file>
+dotnet run --project src/GadgetTool.App -- --data <packs folder> --save-key <key file>
 ```
+
+A `data` folder next to the exe with an `index.json` is used without `--data`;
+`--catalog <pack>\2.0.0\catalog.json` names one pack's catalog directly.
 
 The open dialog starts in the game's save folder (`%APPDATA%\SEGA\SonicRacingCrossWorlds\steam`).
 Backups go to `%LOCALAPPDATA%\GadgetTool\Backups`, never next to the save (its folder may be

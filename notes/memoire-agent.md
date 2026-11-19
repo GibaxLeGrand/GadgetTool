@@ -423,6 +423,17 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   the same.
 - In the game view, a container-sized plate inside a shrink-wrapped column is 0 pixels wide:
   `#gamePlateSlot` stretches.
+- Gibax: the stretched 2/3-slot bases "do not go into the corners". `WBP_GadgetIcon` draws
+  `Base_02` / `Base_03` (1024x512 textures) at 2048x512: the whole texture twice as wide,
+  which matches 2 and 3 cells of the plate to 3 pixels. The page now does that on the game's
+  plate (`scaleX(2)`), no more stretching by the middle there.
+- Gibax also felt some bases were wrong (his capture: the "Perfect Charge" drawing on a
+  silver frame in the game, blue in the tool). Two gadgets share that drawing: the Mini
+  (1 slot, in `DA_MiniGadgetList`, silver in the tool) and the 2-slot one (blue). He could not
+  say which one his capture is. Checked: the kit frame follows `DT_GadgetVariousDefineData`
+  exactly (32 enabled kits, all in the "Kit" categories); EX is only for festival rules. A
+  sheet of all 148 gadgets on their bases: `extracted/bases_sheet.html` (git-ignored, served
+  from the repository root). Still open until he points at a wrong one in the game.
 
 ## Open questions
 

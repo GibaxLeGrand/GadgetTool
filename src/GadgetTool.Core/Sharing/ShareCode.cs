@@ -66,7 +66,7 @@ public static class ShareCode
         var costs = bytes.AsSpan(HeaderSize + 4 * ids.Count, CostBytes(ids.Count));
         for (var i = 0; i < ids.Count; i++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(HeaderSize + 4 * i), GadgetCatalog.ShareHash(ids[i]));
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(HeaderSize + 4 * i), GadgetCatalog.ShareHash(catalog.Canonical(ids[i])));
             var cost = catalog.TryGet(ids[i], out var g) && g.SlotCost is >= 1 and <= 3 ? g.SlotCost : 0;
             costs[i / 4] |= (byte)(cost << (2 * (i % 4)));
         }

@@ -23,6 +23,26 @@ public sealed record SaveSetups(string SaveVersion, IReadOnlyList<PlayerSetups> 
 
     public GadgetPlate Plate(PlateRef plate) => Player(plate.Player).Plates[plate.Index];
 
+    /// <summary>
+    /// The same setups with every gadget id spelled as <paramref name="catalog"/> spells it
+    /// (ids ignore letter case, and a save may spell them differently); ids the catalog does
+    /// not have stay as they are.
+    /// </summary>
+    public SaveSetups WithCatalogSpelling(Gadgets.GadgetCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        return this with
+        {
+            Players = [.. Players.Select(p => p with
+            {
+                Unlocked = p.Unlocked.Select(catalog.Canonical).ToHashSet(Gadgets.GadgetIds.Comparer),
+                Plates = [.. p.Plates.Select(plate => new GadgetPlate(
+                    plate.GadgetIds.Select(catalog.Canonical),
+                    plate.SuperGadgetId is null ? null : catalog.Canonical(plate.SuperGadgetId)))],
+            })],
+        };
+    }
+
     public SaveSetups WithPlate(PlateRef target, GadgetPlate plate)
     {
         var players = Players.ToArray();

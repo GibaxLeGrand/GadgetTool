@@ -48,14 +48,14 @@ public sealed class SeenGameStore
 
         var used = setups.Players
             .SelectMany(p => p.Plates.SelectMany(IdsOf))
-            .Distinct(StringComparer.Ordinal)
+            .Distinct(GadgetIds.Comparer)
             .Where(seen.Gadgets.ContainsKey)
             .Select(id => (id, (string?)seen.Gadgets[id].Name, seen.Gadgets[id].SlotCost));
         var changes = GameChanges.Compare(used, now);
         if (changes.Count == 0)
             return null;
 
-        var changed = changes.Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        var changed = changes.Select(c => c.Id).ToHashSet(GadgetIds.Comparer);
         var presets = (from p in setups.Players
                        from i in Enumerable.Range(0, p.Plates.Count)
                        where IdsOf(p.Plates[i]).Any(changed.Contains)
@@ -68,7 +68,7 @@ public sealed class SeenGameStore
     {
         ArgumentNullException.ThrowIfNull(now);
         _saves[Key(savePath)] = (now.GameVersion,
-            now.Gadgets.ToDictionary(g => g.Id, g => new GadgetSnapshot(g.Name, g.SlotCost), StringComparer.Ordinal));
+            now.Gadgets.ToDictionary(g => g.Id, g => new GadgetSnapshot(g.Name, g.SlotCost), GadgetIds.Comparer));
         Persist();
     }
 
@@ -95,7 +95,7 @@ public sealed class SeenGameStore
             {
                 if (value is not JsonObject save || save["gadgets"] is not JsonObject list)
                     continue;
-                var gadgets = new Dictionary<string, GadgetSnapshot>(StringComparer.Ordinal);
+                var gadgets = new Dictionary<string, GadgetSnapshot>(GadgetIds.Comparer);
                 foreach (var (id, g) in list)
                 {
                     if (g is JsonObject o && o["slotCost"] is JsonValue c && c.TryGetValue(out int cost) && cost >= 1)

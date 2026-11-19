@@ -67,9 +67,9 @@ public static class SetupJson
         var list = plates.ToList();
         var used = list
             .SelectMany(p => p.Plate.SuperGadgetId is { } s ? p.Plate.GadgetIds.Append(s) : p.Plate.GadgetIds)
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal);
-        var gadgets = new Dictionary<string, GadgetEntry?>(StringComparer.Ordinal);
+            .Distinct(GadgetIds.Comparer)
+            .Order(GadgetIds.Comparer);
+        var gadgets = new Dictionary<string, GadgetEntry?>(GadgetIds.Comparer);
         foreach (var id in used)
         {
             if (catalog.TryGet(id, out var g))
@@ -130,7 +130,7 @@ public static class SetupJson
             plates.Add(new SharedPlate(entry.Name, new GadgetPlate(entry.Gadgets, entry.Super), Origin(entry, i)));
         }
 
-        var gadgets = new Dictionary<string, GadgetSnapshot>(StringComparer.Ordinal);
+        var gadgets = new Dictionary<string, GadgetSnapshot>(GadgetIds.Comparer);
         foreach (var (id, g) in document.Gadgets ?? new Dictionary<string, GadgetEntry?>())
         {
             if (g is { SlotCost: >= 1 })

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using GadgetTool.Core.Gadgets;
 using GadgetTool.Core.Setups;
 
 namespace GadgetTool.Core.Saves;
@@ -71,7 +72,7 @@ public sealed class DevJsonSaveFormat : ISaveFormat
                 throw Damaged($"player {number}: {e.Message}");
             }
 
-            var unlocked = Strings(player["unlocked"], $"player {number} unlocked list").ToHashSet(StringComparer.Ordinal);
+            var unlocked = Strings(player["unlocked"], $"player {number} unlocked list").ToHashSet(GadgetIds.Comparer);
             var plates = (player["plates"] as JsonArray ?? throw Damaged($"player {number} has no plates"))
                 .Select((p, i) => ReadPlate(p, $"player {number} plate {i + 1}"))
                 .ToList();

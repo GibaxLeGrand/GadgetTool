@@ -1,3 +1,4 @@
+using GadgetTool.Core.Gadgets;
 using GadgetTool.Core.Saves.Gvas;
 using GadgetTool.Core.Setups;
 
@@ -118,7 +119,7 @@ public sealed class CrossWorldsSaveFormat : ISaveFormat
     private static HashSet<string> UnlockedGadgets(GvasStruct assembly)
     {
         var list = assembly.Get<GvasMap>("GadgetList") ?? throw Damaged("it has no GadgetList");
-        var unlocked = new HashSet<string>(StringComparer.Ordinal);
+        var unlocked = new HashSet<string>(GadgetIds.Comparer);
         foreach (var (key, value) in list.Entries)
         {
             var id = GadgetId(key as string ?? throw Damaged("GadgetList has a key that is not a gadget"));

@@ -19,7 +19,7 @@ public sealed class GadgetCatalog
         GameVersion = gameVersion;
 
         var all = gadgets.ToList();
-        _byId = new Dictionary<string, GadgetDefinition>(StringComparer.Ordinal);
+        _byId = new Dictionary<string, GadgetDefinition>(GadgetIds.Comparer);
         _byShareHash = [];
 
         foreach (var gadget in all)
@@ -29,7 +29,7 @@ public sealed class GadgetCatalog
             if (gadget.SlotCost < 1)
                 throw new ArgumentException($"Gadget '{gadget.Id}' costs {gadget.SlotCost} slots; the minimum is 1.", nameof(gadgets));
             if (!_byId.TryAdd(gadget.Id, gadget))
-                throw new ArgumentException($"Gadget id '{gadget.Id}' appears twice.", nameof(gadgets));
+                throw new ArgumentException($"Gadget id '{gadget.Id}' appears twice (ids ignore letter case).", nameof(gadgets));
 
             var hash = ShareHash(gadget.Id);
             if (!_byShareHash.TryAdd(hash, gadget))
@@ -47,7 +47,11 @@ public sealed class GadgetCatalog
 
     public GameVersion GameVersion { get; }
 
+    /// <summary>Finds a gadget by id, ignoring letter case (see <see cref="GadgetIds"/>).</summary>
     public bool TryGet(string id, out GadgetDefinition gadget) => _byId.TryGetValue(id, out gadget!);
+
+    /// <summary>The id as this catalog spells it; an id the catalog does not have stays as it is.</summary>
+    public string Canonical(string id) => TryGet(id, out var gadget) ? gadget.Id : id;
 
     internal bool TryGetByShareHash(uint hash, out GadgetDefinition gadget) => _byShareHash.TryGetValue(hash, out gadget!);
 

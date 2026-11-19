@@ -30,6 +30,11 @@ sample save is generated for them. "Game closed" can be clicked to pretend the g
 - **`.gtpresets` file** (JSON inside): one preset, a player's presets or every player's,
   with their names and where they came from. "Import…" puts a preset on the selected one,
   or puts a whole file back where it came from.
+- Both record the **game version** and the gadgets' slot costs. Importing a share from an
+  older version checks its gadgets against yours (unchanged ones are compatible; changed or
+  removed ones are listed); a share from a newer version is refused.
+- Opening a save after a game update that changed gadgets its presets use shows a banner,
+  and the presets it broke are marked red until fixed.
 
 ## Keys
 

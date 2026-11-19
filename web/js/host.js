@@ -29,6 +29,7 @@
       reloadSave: () => call("reloadSave"),
       save: (players) => call("save", { players }),
       renamePreset: (player, index, name) => call("renamePreset", { player, index, name }),
+      acknowledgeGameUpdate: () => call("acknowledgeGameUpdate"),
       gameRunning: () => call("gameRunning"),
       exportFile: (suggestedName, content) => call("exportFile", { suggestedName, content }),
       importFile: () => call("importFile"),
@@ -121,6 +122,7 @@
         else names.get(lastName).delete(`${player}:${index}`);
         return { name: clean };
       },
+      async acknowledgeGameUpdate() { return {}; },
       async gameRunning() { return { running }; },
       toggleGame() { running = !running; return running; },
       async exportFile(name, content) {

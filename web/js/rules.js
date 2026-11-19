@@ -171,38 +171,101 @@
     return Uint8Array.from(s, (c) => c.charCodeAt(0));
   }
 
-  function encodeShareCode(plate) {
-    const hashes = plate.gadgets.map(shareHash);
-    if (plate.super) hashes.push(shareHash(plate.super));
-    const bytes = new Uint8Array(3 + 4 * hashes.length + 2);
+  // ---- Game versions (GameVersion in the Core) ---------------------------------------
+
+  /** "2.0.0" -> [2, 0, 0]; anything else -> null (unknown). */
+  function parseVersion(text) {
+    if (typeof text !== "string" || !/^\d{1,3}(\.\d{1,3}){0,2}$/.test(text.trim())) return null;
+    const parts = text.trim().split(".").map(Number);
+    if (parts.some((p) => p > 255)) return null;
+    while (parts.length < 3) parts.push(0);
+    return parts.every((p) => p === 0) ? null : parts;
+  }
+  const versionText = (v) => (v ? v.join(".") : null);
+
+  /** A share's version against ours: "same", "older" (check its gadgets), "newer" (refused) or "unknown" (check). */
+  function ageOf(shared, ours) {
+    if (!shared || !ours) return "unknown";
+    for (let i = 0; i < 3; i++) if (shared[i] !== ours[i]) return shared[i] < ours[i] ? "older" : "newer";
+    return "same";
+  }
+
+  /** then: [{ id, name, slotCost }] as a share recorded them -> what is different now. */
+  function compareGadgets(then, catalog) {
+    const changes = [];
+    const seen = new Set();
+    for (const g of then) {
+      if (seen.has(g.id)) continue;
+      seen.add(g.id);
+      const now = catalog.byId.get(g.id);
+      if (!now) changes.push({ id: g.id, name: g.name || null, then: g.slotCost, now: null });
+      else if (now.slotCost !== g.slotCost) changes.push({ id: g.id, name: now.name, then: g.slotCost, now: now.slotCost });
+    }
+    return changes;
+  }
+
+  const describeChange = (c) => c.now == null
+    ? `${c.name || c.id} is not in this game version.`
+    : `${c.name || c.id}: ${c.then} slot${c.then === 1 ? "" : "s"} when shared, ${c.now} now.`;
+
+  // Bytes: format 1, row count, flags (bit 0: Super Slot gadget), game version (3 bytes),
+  // one 32-bit hash per gadget (rows, then Super Slot), slot costs (2 bits each, 0 = unknown),
+  // checksum (16 bits). Same as ShareCode in the Core.
+  const HEADER = 6;
+  const costBytes = (n) => Math.ceil(n / 4);
+  const codeLength = (n) => HEADER + 4 * n + costBytes(n) + 2;
+
+  function encodeShareCode(plate, catalog) {
+    const ids = plate.super ? [...plate.gadgets, plate.super] : plate.gadgets.slice();
+    const bytes = new Uint8Array(codeLength(ids.length));
     const view = new DataView(bytes.buffer);
+    const version = catalog.gameVersion || [0, 0, 0];
     bytes[0] = 1;
     bytes[1] = plate.gadgets.length;
     bytes[2] = plate.super ? 1 : 0;
-    hashes.forEach((h, i) => view.setUint32(3 + 4 * i, h, true));
+    bytes.set(version, 3);
+    const costAt = HEADER + 4 * ids.length;
+    ids.forEach((id, i) => {
+      view.setUint32(HEADER + 4 * i, shareHash(id), true);
+      const cost = catalog.byId.get(id)?.slotCost ?? 0;
+      bytes[costAt + (i >> 2)] |= (cost >= 1 && cost <= 3 ? cost : 0) << (2 * (i % 4));
+    });
     view.setUint16(bytes.length - 2, checksum(bytes.subarray(0, bytes.length - 2)), true);
     return PREFIX + toBase64Url(bytes);
   }
 
+  /** -> { plate, gameVersion, age, changes, missing } (gadgets this version does not know are left out). */
   function decodeShareCode(code, catalog) {
     const text = code.trim();
     if (!text.toUpperCase().startsWith(PREFIX)) throw new Error(`Not a GadgetTool code: it should start with “${PREFIX}”.`);
     const bytes = fromBase64Url(text.slice(PREFIX.length));
-    if (bytes.length < 5) throw new Error("The code is too short; part of it may be missing.");
+    if (bytes.length < HEADER + 2) throw new Error("The code is too short; part of it may be missing.");
     if (bytes[0] !== 1) throw new Error(`The code uses format ${bytes[0]}, which this version does not know.`);
     const count = bytes[1], hasSuper = (bytes[2] & 1) !== 0, n = count + (hasSuper ? 1 : 0);
-    if (count > 32 || (bytes[2] & ~1) !== 0 || bytes.length !== 3 + 4 * n + 2) throw new Error("The code is damaged: its length does not match its content.");
+    if (count > 32 || (bytes[2] & ~1) !== 0 || bytes.length !== codeLength(n)) throw new Error("The code is damaged: its length does not match its content.");
     const view = new DataView(bytes.buffer);
     if (view.getUint16(bytes.length - 2, true) !== checksum(bytes.subarray(0, bytes.length - 2)))
       throw new Error("The code is damaged: its checksum does not match (a typo, or a character lost when copying).");
-    const ids = [];
+
+    const version = bytes[3] || bytes[4] || bytes[5] ? [bytes[3], bytes[4], bytes[5]] : null;
+    const costAt = HEADER + 4 * n;
+    const rows = [], then = [];
+    let sup = null, missing = 0;
     for (let i = 0; i < n; i++) {
-      const h = view.getUint32(3 + 4 * i, true);
-      const g = catalog.byHash.get(h);
-      if (!g) throw new Error("The code holds a gadget this game version does not know; it may come from a newer version.");
-      ids.push(g.id);
+      const g = catalog.byHash.get(view.getUint32(HEADER + 4 * i, true));
+      const cost = (bytes[costAt + (i >> 2)] >> (2 * (i % 4))) & 3;
+      if (!g) { missing++; continue; }
+      if (i < count) rows.push(g.id); else sup = g.id;
+      if (cost) then.push({ id: g.id, name: g.name, slotCost: cost });
     }
-    return { gadgets: ids.slice(0, count), super: hasSuper ? ids[count] : null };
+    const age = ageOf(version, catalog.gameVersion);
+    return {
+      plate: { gadgets: rows, super: sup },
+      gameVersion: versionText(version),
+      age,
+      changes: age === "same" ? [] : compareGadgets(then, catalog),
+      missing,
+    };
   }
 
   // ---- Presets files (SetupJson in the Core: same format, extension .gtpresets) ------
@@ -210,10 +273,18 @@
   const FILE_EXTENSION = ".gtpresets";
 
   /** entries: [{ name, from: { player, index } | null, plate }] */
-  function exportJson(entries) {
+  function exportJson(entries, catalog) {
+    const gadgets = {};
+    const used = [...new Set(entries.flatMap((e) => (e.plate.super ? [...e.plate.gadgets, e.plate.super] : e.plate.gadgets)))].sort();
+    for (const id of used) {
+      const g = catalog.byId.get(id);
+      if (g) gadgets[id] = { name: g.name, slotCost: g.slotCost };
+    }
     return JSON.stringify({
       format: "gadgettool.setups",
       version: 1,
+      ...(catalog.gameVersion ? { gameVersion: versionText(catalog.gameVersion) } : {}),
+      gadgets,
       plates: entries.map((e) => ({
         ...(e.name ? { name: e.name } : {}),
         ...(e.from ? { player: e.from.player, preset: String.fromCharCode(65 + e.from.index) } : {}),
@@ -223,13 +294,17 @@
     }, null, 2);
   }
 
-  function importJson(text) {
+  /** -> { gameVersion, age, entries: [{ name, from, plate, changes }] } */
+  function importJson(text, catalog) {
     let doc;
     try { doc = JSON.parse(text); } catch (e) { throw new Error("Not a share code, nor a presets file: " + e.message); }
     if (!doc || doc.format !== "gadgettool.setups") throw new Error("Not a GadgetTool presets file.");
     if (doc.version > 1) throw new Error(`The file uses version ${doc.version}; this GadgetTool reads up to 1.`);
     if (!Array.isArray(doc.plates)) throw new Error("The file has no presets list.");
-    return doc.plates.map((p, i) => {
+    const version = parseVersion(doc.gameVersion);
+    const age = ageOf(version, catalog.gameVersion);
+    const recorded = doc.gadgets && typeof doc.gadgets === "object" ? doc.gadgets : {};
+    const entries = doc.plates.map((p, i) => {
       if (!p || !Array.isArray(p.gadgets) || p.gadgets.some((id) => typeof id !== "string" || !id.trim()))
         throw new Error(`Preset ${i + 1} has no valid gadgets list.`);
       let from = null;
@@ -238,8 +313,18 @@
           throw new Error(`Preset ${i + 1} has a bad origin: a player is 1 to 4 and a preset a letter.`);
         from = { player: p.player, index: p.preset.charCodeAt(0) - 65 };
       }
-      return { name: typeof p.name === "string" ? p.name : null, from, plate: { gadgets: p.gadgets.slice(), super: p.super || null } };
+      const plate = { gadgets: p.gadgets.slice(), super: p.super || null };
+      const then = (plate.super ? [...plate.gadgets, plate.super] : plate.gadgets)
+        .filter((id) => recorded[id] && recorded[id].slotCost >= 1)
+        .map((id) => ({ id, name: recorded[id].name, slotCost: recorded[id].slotCost }));
+      return {
+        name: typeof p.name === "string" ? p.name : null,
+        from,
+        plate,
+        changes: age === "same" ? [] : compareGadgets(then, catalog),
+      };
     });
+    return { gameVersion: versionText(version), age, entries };
   }
 
   // ---- Data from the host ------------------------------------------------------------
@@ -249,6 +334,7 @@
     const gadgets = source.gadgets;
     return {
       source: source.source || "",
+      gameVersion: parseVersion(source.gameVersion),
       gadgets,
       byId: new Map(gadgets.map((g) => [g.id, g])),
       byHash: new Map(gadgets.map((g) => [shareHash(g.id), g])),
@@ -283,6 +369,7 @@
   window.GT = {
     arrange, slotCount, capacity, used, levelName, validate, describe, paste, withPlate, samePlate, clonePlate,
     encodeShareCode, decodeShareCode, FILE_EXTENSION, exportJson, importJson, makeCatalog, fromSaveDto, toSaveRequest,
+    parseVersion, versionText, ageOf, compareGadgets, describeChange,
     presetLetter: (i) => String.fromCharCode(65 + i),
   };
 })();

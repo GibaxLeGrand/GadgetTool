@@ -636,6 +636,30 @@ body.theme-game {
 
 #importAll .wide { width: 100%; margin: 6px 0 4px; }
 
+/* ---- Game versions: imports from another version, and updates since a save was last opened ---- */
+
+.import-note { color: var(--muted); font-size: 13px; }
+.import-note div { margin: 2px 0; }
+.import-entry.changed { border-color: color-mix(in srgb, var(--warn) 60%, transparent); }
+.import-entry .changes { font-size: 12px; color: #f7d38f; margin-top: 4px; }
+.tag-ok { color: var(--ok); font-size: 12px; }
+.tag-bad { color: var(--warn); font-size: 12px; }
+
+.update-banner {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--bad) 16%, var(--panel));
+  border-bottom: 1px solid color-mix(in srgb, var(--bad) 50%, transparent);
+}
+.update-banner .u-text { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.update-banner .u-urgent { color: #ffb3ba; font-weight: 600; }
+.issues li.urgent { background: color-mix(in srgb, var(--bad) 28%, transparent); color: #ffd1d6; font-weight: 600; }
+.preset.urgent { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.preset.urgent .warn { color: var(--bad); }
+.g-tab.urgent, .theme-game .g-tab.urgent { border-color: var(--bad); box-shadow: 0 0 0 2px var(--bad); }
+
 /* ---- Welcome (no save open) ---- */
 
 [hidden] { display: none !important; }

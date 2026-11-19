@@ -40,6 +40,7 @@
     clipboard: null, // { plate, label, name }
     gameRunning: false,
     names: new Map(), // "player:index" -> name; GadgetTool only, not part of undo
+    gameUpdate: null, // what a game update changed for this save's presets, until "Got it"
     view: loadPref("gadgettool.view", ["list", "game"]),
     // Colours, separate from the view: "auto" gives each view its own (dark lists, game-coloured game style).
     theme: loadPref("gadgettool.theme", ["auto", "dark", "game"]),
@@ -133,6 +134,7 @@
     applyTheme();
     placeSharedParts();
     renderTop();
+    renderUpdateBanner();
     if (!open) return;
     renderPlayers();
     renderEditor();
@@ -160,12 +162,51 @@
     }
   }
 
+  const sourceText = () => catalog.gameVersion ? `${catalog.source} · game ${GT.versionText(catalog.gameVersion)}` : catalog.source;
+
+  // ---- Game update since this save was last opened -----------------------------------
+
+  /** Changes of the last game update that touch this preset (empty when none). */
+  function updateChanges(n, i) {
+    const u = state.gameUpdate;
+    if (!u || !u.presets.includes(`${n}:${i}`)) return [];
+    const pl = player(n).plates[i];
+    const ids = new Set(pl.super ? [...pl.gadgets, pl.super] : pl.gadgets);
+    return u.changes.filter((c) => ids.has(c.id));
+  }
+
+  function renderUpdateBanner() {
+    const u = state.gameUpdate;
+    const banner = $("#updateBanner");
+    banner.hidden = !u || !state.current;
+    if (banner.hidden) return;
+    const broken = u.presets
+      .map((k) => k.split(":").map(Number))
+      .filter(([n, i]) => GT.validate(player(n).plates[i], player(n), catalog).length > 0);
+    banner.replaceChildren(
+      h("div", { class: "u-text" },
+        h("b", {}, `The game changed since GadgetTool last opened this save (${u.from} → ${u.to}).`),
+        h("div", {}, "Gadgets your presets use: ", u.changes.map((c) => GT.describeChange(c)).join(" ")),
+        broken.length
+          ? h("div", { class: "u-urgent" }, `${broken.length} preset${broken.length > 1 ? "s" : ""} no longer fit${broken.length > 1 ? "" : "s"}: `,
+              broken.map(([n, i]) => fullLabel(n, i)).join(", "),
+              ". They are left as they are and marked in red: fix them before playing.")
+          : h("div", {}, "Every preset still fits.")),
+      h("button", { type: "button", onclick: acknowledgeUpdate }, "Got it"));
+  }
+
+  async function acknowledgeUpdate() {
+    try { await host.acknowledgeGameUpdate(); } catch (e) { toast(e.message, "bad"); return; }
+    state.gameUpdate = null;
+    render();
+  }
+
   function renderTop() {
     const open = !!state.current;
     const n = changedPlates().length;
     $("#saveInfo").textContent = !open
-      ? catalog.source
-      : `${state.fileName} · ${catalog.source}` + (n ? ` · ${n} unsaved preset${n > 1 ? "s" : ""}` : " · no unsaved change");
+      ? sourceText()
+      : `${state.fileName} · ${sourceText()}` + (n ? ` · ${n} unsaved preset${n > 1 ? "s" : ""}` : " · no unsaved change");
     $("#undoBtn").disabled = state.undo.length === 0;
     $("#redoBtn").disabled = state.redo.length === 0;
     for (const b of $("#viewSwitch").children) b.classList.toggle("on", b.dataset.view === state.view);
@@ -215,8 +256,9 @@
     $("#presets").replaceChildren(...p.plates.map((pl, i) => {
       const issues = GT.validate(pl, p, catalog);
       const name = presetName(p.number, i);
+      const urgent = issues.length > 0 && updateChanges(p.number, i).length > 0;
       const el = h("button", {
-        class: "preset" + (i === state.preset ? " active" : ""),
+        class: "preset" + (i === state.preset ? " active" : "") + (urgent ? " urgent" : ""),
         draggable: "true",
         title: "Drag onto another preset to copy it there",
         onclick: () => { state.preset = i; render(); },
@@ -298,8 +340,11 @@
       gridContent = [h("div", { class: "overflow", title: "These gadgets do not fit on this plate" }, known.map((id) => block(gadget(id), { bad: true })))];
     }
     if (unknown.length) {
-      gridContent.push(h("div", { class: "unknowns" }, unknown.map((id) =>
-        h("span", { class: "unknown-chip" }, `Unknown: ${id} `, h("button", { type: "button", class: "x", onclick: () => removeGadget(id) }, "×")))));
+      gridContent.push(h("div", { class: "unknowns" }, unknown.map((id) => {
+        const oldName = state.gameUpdate?.changes.find((c) => c.id === id)?.name;
+        return h("span", { class: "unknown-chip", title: id }, oldName ? `${oldName} (no longer in the game) ` : `Unknown: ${id} `,
+          h("button", { type: "button", class: "x", title: "Remove", onclick: () => removeGadget(id) }, "×"));
+      })));
     }
 
     const grid = h("div", { class: "grid" }, gridContent);
@@ -311,7 +356,15 @@
     const items = [];
     if (issues.length === 0) items.push(h("li", { class: "ok" }, pl.gadgets.length || pl.super ? "This preset follows every rule." : "Empty preset."));
     else {
-      if (!isChanged(p.number, state.preset)) items.push(h("li", { class: "note" }, "This preset was already like this in the save. It does not block saving, but the game may not accept it."));
+      const fromUpdate = updateChanges(p.number, state.preset);
+      if (fromUpdate.length && !isChanged(p.number, state.preset)) {
+        items.push(h("li", { class: "urgent" },
+          `The game update ${state.gameUpdate.from} → ${state.gameUpdate.to} broke this preset: `,
+          fromUpdate.map((c) => GT.describeChange(c)).join(" "),
+          " It is left as it is; fix it before playing."));
+      } else if (!isChanged(p.number, state.preset)) {
+        items.push(h("li", { class: "note" }, "This preset was already like this in the save. It does not block saving, but the game may not accept it."));
+      }
       for (const x of issues) items.push(h("li", {}, GT.describe(x, catalog)));
     }
     $("#issues").replaceChildren(...items);
@@ -397,9 +450,10 @@
       h("button", { type: "button", class: "g-arrow", title: "Previous preset (Page Up)", onclick: () => go(-1) }, "◀"),
       ...p.plates.map((pl, i) => {
         const broken = GT.validate(pl, p, catalog).length > 0;
+        const urgent = broken && updateChanges(p.number, i).length > 0;
         return h("button", {
           type: "button",
-          class: "g-tab" + (i === state.preset ? " on" : ""),
+          class: "g-tab" + (i === state.preset ? " on" : "") + (urgent ? " urgent" : ""),
           title: `${fullLabel(p.number, i)} · ${pl.gadgets.length || pl.super ? `${GT.used(pl, catalog)}/${GT.capacity(p)} slots` : "Empty"}`,
           onclick: () => { state.preset = i; render(); },
         }, GT.presetLetter(i),
@@ -612,6 +666,7 @@
     state.saved = save;
     state.current = save;
     state.names = save.names;
+    state.gameUpdate = dto.gameUpdate || null;
     state.undo = [];
     state.redo = [];
     state.player = save.players[0]?.number ?? 1;
@@ -745,7 +800,7 @@
 
   function openShareDialog() {
     $("#shareWhat").textContent = fullLabel(state.player, state.preset);
-    $("#shareCode").value = GT.encodeShareCode(plate());
+    $("#shareCode").value = GT.encodeShareCode(plate(), catalog);
     $("#shareDialog").showModal();
   }
 
@@ -762,7 +817,7 @@
       : `${label(state.player, state.preset)}${own ? " - " + own : ""}`;
     const name = base.replace(/[\\/:*?"<>|]/g, "").trim() + GT.FILE_EXTENSION;
     try {
-      const r = await host.exportFile(name, GT.exportJson(entries));
+      const r = await host.exportFile(name, GT.exportJson(entries, catalog));
       if (!r.cancelled) toast(`Exported ${entries.length} preset${entries.length > 1 ? "s" : ""} to ${r.fileName}.`);
     } catch (e) {
       toast(e.message, "bad");
@@ -779,6 +834,7 @@
     $("#importTarget").textContent = fullLabel(state.player, state.preset);
     $("#importText").value = "";
     $("#importError").textContent = "";
+    $("#importNote").replaceChildren();
     $("#importAll").replaceChildren();
     $("#importList").replaceChildren();
     $("#importDialog").showModal();
@@ -790,19 +846,37 @@
 
   function readImport(text) {
     $("#importError").textContent = "";
+    $("#importNote").replaceChildren();
     $("#importAll").replaceChildren();
     $("#importList").replaceChildren();
     const trimmed = text.trim();
     if (!trimmed) return;
-    let entries;
+    let entries, gameVersion, age, missing = 0;
     try {
-      entries = /^gt\d-/i.test(trimmed)
-        ? [{ name: null, from: null, plate: GT.decodeShareCode(trimmed, catalog), code: true }]
-        : GT.importJson(trimmed);
+      if (/^gt\d-/i.test(trimmed)) {
+        const d = GT.decodeShareCode(trimmed, catalog);
+        ({ gameVersion, age, missing } = d);
+        entries = [{ name: null, from: null, plate: d.plate, changes: d.changes, code: true }];
+      } else {
+        ({ gameVersion, age, entries } = GT.importJson(trimmed, catalog));
+      }
     } catch (e) {
       $("#importError").textContent = e.message;
       return;
     }
+
+    // Same game version: nothing to check. Older (or unknown): the gadgets were checked against
+    // ours, and only those that changed are shown. Newer than ours: not compatible.
+    const ours = GT.versionText(catalog.gameVersion);
+    if (age === "newer") {
+      $("#importError").textContent =
+        `Made with game version ${gameVersion}, newer than yours (${ours}): not compatible. Update the game, then import again.`;
+      return;
+    }
+    const notes = [];
+    if (age === "older") notes.push(`Made with game version ${gameVersion}; yours is ${ours}. Its gadgets were checked against your version.`);
+    if (missing) notes.push(`${missing} gadget${missing > 1 ? "s" : ""} of this code ${missing > 1 ? "are" : "is"} not in your game version and ${missing > 1 ? "were" : "was"} left out.`);
+    $("#importNote").replaceChildren(...notes.map((t) => h("div", {}, t)));
 
     const here = { player: state.player, index: state.preset };
     const exists = (t) => state.current.players.some((p) => p.number === t.player && t.index < p.plates.length);
@@ -814,11 +888,15 @@
       }, `Put the ${placed.length} presets back where they came from`));
     }
 
-    $("#importList").replaceChildren(...entries.map((e, n) => h("div", { class: "import-entry" },
+    $("#importList").replaceChildren(...entries.map((e, n) => h("div", { class: "import-entry" + (e.changes.length ? " changed" : "") },
       h("div", { class: "what" },
         h("div", {}, e.name ? `“${e.name}”` : e.code ? "Share code" : `Preset ${n + 1}`,
-          e.from ? h("span", { class: "muted" }, ` · from ${label(e.from.player, e.from.index)}`) : null),
-        h("div", { class: "names" }, describePlate(e.plate))),
+          e.from ? h("span", { class: "muted" }, ` · from ${label(e.from.player, e.from.index)}`) : null,
+          age === "older" || age === "unknown"
+            ? h("span", { class: e.changes.length ? "tag-bad" : "tag-ok" }, e.changes.length ? " · changed since" : " · compatible")
+            : null),
+        h("div", { class: "names" }, describePlate(e.plate)),
+        e.changes.length ? h("div", { class: "changes" }, e.changes.map((c) => h("div", {}, GT.describeChange(c)))) : null),
       h("button", { type: "button", class: entries.length === 1 ? "primary" : null, onclick: () => { $("#importDialog").close(); putImported(e, [here]); } },
         `Put on ${label(here.player, here.index)}`),
       h("button", { type: "button", onclick: () => { $("#importDialog").close(); openPasteDialog(e.plate, e.name ? `“${e.name}”` : "the imported preset", [], e.name); } },

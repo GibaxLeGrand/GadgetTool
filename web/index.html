@@ -42,6 +42,7 @@
   </section>
 
   <nav class="players" id="players" aria-label="Local players" hidden></nav>
+  <div class="update-banner" id="updateBanner" role="alert" hidden></div>
 
   <!-- The editor's head, plate and issues are shared by both views: they move between them. -->
   <main class="layout" id="editorLayout" hidden>
@@ -150,6 +151,7 @@
         <button type="button" id="importFileBtn">Open a file…</button>
       </div>
       <p class="error" id="importError"></p>
+      <div class="import-note" id="importNote"></div>
       <div id="importAll"></div>
       <div id="importList"></div>
       <div class="dialog-buttons"><button value="close">Close</button></div>

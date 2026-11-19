@@ -386,10 +386,12 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   browser on the stand-in host: matches the screenshot for a 1-slot gadget.
 - Gibax's corrections (same day): stretch the 2- and 3-slot bases over their cells "comme
   avant"; in the gadget list every gadget is 1-slot "pour l'ui"; the EX kits ("Spindash
-  etc") on the EX bases, 1-slot in the list and 3-slot on the plate. Done: EX = the
-  "AdvancedKit" category (16 kits), bases `Base_01_Kit_001_EX` / `Base_03_Kit_002_EX`;
-  plate bases stretched with a CSS border-image (ends kept). Still to confirm in the game:
-  that every "AdvancedKit" is EX, and where the icon sits on a long base (centred here).
+  etc") on the EX bases, 1-slot in the list and 3-slot on the plate. First tried
+  EX = the "AdvancedKit" category on the pink bases; Gibax then checked in the game: the
+  Spin Dash kit has the same frame as the kit under it (yellow, notched). So every kit has
+  the kit base, and the pink EX bases are not used (not exported). Plate bases stretched
+  with a CSS border-image (ends kept). Still to confirm: where the icon sits on a long base
+  (centred here).
 - The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
   images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.
 

@@ -21,6 +21,7 @@ internal sealed class GameFiles : IDisposable
     public const string GadgetTable = "UNION/Content/01_Union/Database/Gadget/DT_GadgetData";
     public const string CategoryTable = "UNION/Content/01_Union/Database/Gadget/DT_GadgetCustomCategoryData";
     public const string MiniGadgetList = "UNION/Content/01_Union/Database/Gadget/DA_MiniGadgetList";
+    public const string PlateTable = "UNION/Content/01_Union/Database/Gadget/DT_GadgetPlateData";
     private const string LocalizationFolder = "UNION/Content/Localization/Game/";
 
     private readonly DefaultFileProvider _provider;

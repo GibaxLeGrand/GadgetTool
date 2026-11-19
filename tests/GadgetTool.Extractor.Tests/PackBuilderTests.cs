@@ -169,9 +169,9 @@ public class PackBuilderTests
     }
 
     [Fact]
-    public void The_ui_folder_holds_every_base_the_page_asks_for() =>
+    public void The_ui_folder_holds_every_picture_the_page_asks_for() =>
         Assert.Equal(
-            ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png"],
+            ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png", "lock.png", "plus.png"],
             PackBuilder.UiTextures.Keys.Order(StringComparer.Ordinal));
 
     [Fact]

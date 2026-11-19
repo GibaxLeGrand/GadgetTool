@@ -5,7 +5,7 @@ a plain browser for work on the page.
 
 | File | What |
 |---|---|
-| `index.html`, `css/app.css`, `js/app.js` | The editor: players 1 to 4, presets A to J with names (GadgetTool only), the plate (two rows of 3 slots and the Super Slot, 7 slots on a Grand Master plate), copy/paste, share codes, `.gtpresets` files, undo/redo. Two views: **Lists** (default: scrolling presets and gadgets) and **Game style** (preset tabs over the plate, a description box, gadgets in rows by category, as in the game's menu). |
+| `index.html`, `css/app.css`, `js/app.js` | The editor: players 1 to 4, presets A to J with names (GadgetTool only), the plate (two rows of 3 slots and the Super Slot, 7 slots on a Grand Master plate), copy/paste, share codes, `.gtpresets` files, undo/redo. Two views: **Lists** (default: scrolling presets and gadgets) and **Game style** (preset tabs over the plate, a description box, gadgets in rows by category, as in the game's menu). Colours are a separate setting for either view: per view (default), dark, or the game's. |
 | `js/rules.js` | The Core's rules in JS, for instant feedback while editing (same share-code bytes and JSON format; a C# test checks the codes match). The app checks every rule again before writing. |
 | `js/host.js` | Where data and files come from. In the app: calls to `AppBridge` through WebView2 messages (`{ id, method, params }`). In a browser: a stand-in that never writes anything. |
 

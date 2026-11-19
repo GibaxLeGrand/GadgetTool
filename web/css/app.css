@@ -66,6 +66,9 @@ textarea { width: 100%; resize: vertical; font-family: Consolas, monospace; }
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
+.topbar > * { flex-shrink: 0; white-space: nowrap; }
+.topbar button { white-space: nowrap; }
+.topbar .saveinfo { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .brand { font-weight: 700; font-size: 16px; }
 .tag { font-size: 11px; font-weight: 600; color: var(--warn); border: 1px solid var(--warn); border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
 .saveinfo { color: var(--muted); }
@@ -434,7 +437,8 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
 .import-entry .what { flex: 1; min-width: 0; }
 .import-entry .names { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ---- Game-style view: preset tabs over the plate, a description box, gadgets by category ---- */
+/* ---- Game-style view: preset tabs over the plate, a description box, gadgets by category ----
+   Layout only here; the colours come from the theme (dark by default, .theme-game below). */
 
 .game {
   flex: 1;
@@ -443,7 +447,6 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
   grid-template-columns: minmax(640px, auto) minmax(420px, 1fr);
   gap: 22px;
   padding: 16px 22px;
-  background: radial-gradient(ellipse at 30% 20%, #1d3557 0%, #0e1118 70%);
 }
 .game > * { min-height: 0; }
 .g-left { overflow: auto; display: flex; flex-direction: column; align-items: flex-start; }
@@ -458,19 +461,12 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
   border-radius: 9px 9px 4px 4px;
   font-size: 20px;
   font-weight: 800;
-  color: #fff;
-  background: linear-gradient(180deg, #4f86f0, #2457c7);
-  border: 2px solid #9cc0ff;
-  box-shadow: 0 2px 0 #0d2a66;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 2px solid var(--line);
 }
-.g-tab.on {
-  height: 50px;
-  min-width: 48px;
-  color: #1a1a1a;
-  background: linear-gradient(180deg, #ffe58a, #f2b81f);
-  border-color: #fff4c4;
-}
-.g-arrow { font-size: 13px; background: #fff; color: #1a1a1a; border-color: #cfd6e6; min-width: 34px; height: 30px; align-self: center; }
+.g-tab.on { height: 50px; min-width: 48px; background: var(--accent-2); border-color: var(--accent); }
+.g-arrow { font-size: 13px; min-width: 34px; height: 30px; align-self: center; }
 .g-tab .g-warn, .g-tab .g-dot {
   position: absolute;
   top: -7px;
@@ -485,25 +481,7 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
 .g-tab .g-warn { background: var(--bad); color: #fff; }
 .g-tab .g-dot { background: var(--warn); min-width: 10px; height: 10px; top: -4px; right: -3px; }
 
-/* The plate in the game's colours: brushed blue metal, gold stripes. */
-.game .plate {
-  margin-top: 0;
-  background: linear-gradient(135deg, #9fc1ff, #2e5fc9 40%, #2e5fc9 70%, #9fc1ff);
-}
-.game .plate-inner {
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 2px, transparent 2px 5px),
-    linear-gradient(180deg, #3c73dc, #1f4aa8 55%, #1a3f92);
-}
-.game .plate-title { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); border-bottom-color: rgba(255,255,255,.25); }
-.game .plate-title span { background: none; color: rgba(255,255,255,.85); -webkit-background-clip: border-box; background-clip: border-box; font-style: italic; }
-.game .hex { background: #8aa3d6; }
-.game .hex::before { background: radial-gradient(circle at 50% 40%, #222a3a, #10141e); }
-.game .hex.locked { background: #3a5aa0; }
-.game .hex.locked::before { background: #1b2f5c; }
-.game .hex.block, .game .hex.block.s1 { background: linear-gradient(180deg, #d6e4ff, #6f8fd0); }
-.game .hex.super, .game .hex.block.super { background: linear-gradient(180deg, #ffe597, #c4951f); }
-.game .super-caption { color: #ffe08a; }
+.game .plate { margin-top: 0; }
 
 .g-info {
   width: 100%;
@@ -528,22 +506,22 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
   flex: 1;
   overflow-y: auto;
   border-radius: 14px;
-  border: 3px solid #d7dce8;
-  background: #c9cfdd;
+  border: 1px solid var(--line);
+  background: var(--panel);
   padding: 6px;
 }
 .g-panel.over { border-color: var(--bad); }
-.g-cat { background: hsl(var(--h) 70% 90%); margin-bottom: 6px; padding: 4px 0 8px; }
+.g-cat { background: hsl(var(--h) 28% 16%); margin-bottom: 6px; padding: 4px 0 8px; }
 .g-cat-name {
   display: inline-block;
   padding: 3px 26px 3px 12px;
   font-weight: 700;
   color: #fff;
-  background: #6b7184;
+  background: hsl(var(--h) 22% 32%);
   clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
 }
-.g-row { display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px 4px; scrollbar-width: thin; scrollbar-color: #8a90a3 transparent; }
-.g-none { color: #333; padding: 12px; }
+.g-row { display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px 4px; scrollbar-width: thin; scrollbar-color: #5b6378 transparent; }
+.g-none { color: var(--muted); padding: 12px; }
 
 .g-tile {
   --u-w: 92px; --u-h: 80px; --u-c: 23px; --u-ci: 21.5px;
@@ -558,9 +536,10 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
   background: transparent;
   border: none;
   border-radius: 10px;
-  color: #1a1a1a;
+  color: var(--text);
 }
-.g-tile:hover:not([aria-disabled]) { background: rgba(255,255,255,.45); }
+.g-tile:hover:not([aria-disabled]) { background: rgba(255,255,255,.07); }
+.g-tile.equipped .g-hex { background: linear-gradient(180deg, #6b98ff, #2c5bd0); }
 .g-tile .g-hex { background: #2c3a5c; }
 .g-tile .g-hex::before { background: radial-gradient(circle at 50% 40%, #33415f, #1a2236); }
 .g-tile.equipped .g-hex { background: linear-gradient(180deg, #6b98ff, #2c5bd0); }
@@ -599,13 +578,61 @@ dialog::backdrop { background: rgba(4, 6, 10, .65); }
   max-width: 108px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--panel-2);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---- Theme: the game's colours (an option, for either view) ----
+   Blue backdrop, a brushed blue metal plate, gold and blue preset tabs, light category rows. */
+
+body.theme-game {
+  --bg: #0b1730;
+  --panel: #10234a;
+  --panel-2: #163061;
+  --line: #2b4a84;
+  --muted: #93a3c4;
+  background: radial-gradient(ellipse at 30% 15%, #1f3f78 0%, #0b1730 65%) fixed;
+}
+.theme-game .plate { background: linear-gradient(135deg, #9fc1ff, #2e5fc9 40%, #2e5fc9 70%, #9fc1ff); }
+.theme-game .plate-inner {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #3c73dc, #1f4aa8 55%, #1a3f92);
+}
+.theme-game .plate-title { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); border-bottom-color: rgba(255,255,255,.25); }
+.theme-game .plate-title span { background: none; color: rgba(255,255,255,.85); -webkit-background-clip: border-box; background-clip: border-box; font-style: italic; }
+.theme-game .hex { background: #8aa3d6; }
+.theme-game .hex::before { background: radial-gradient(circle at 50% 40%, #222a3a, #10141e); }
+.theme-game .hex.locked { background: #3a5aa0; }
+.theme-game .hex.locked::before { background: #1b2f5c; }
+.theme-game .hex.block, .theme-game .hex.block.s1 { background: linear-gradient(180deg, #d6e4ff, #6f8fd0); }
+.theme-game .hex.super, .theme-game .hex.block.super { background: linear-gradient(180deg, #ffe597, #c4951f); }
+.theme-game .super-caption { color: #ffe08a; }
+
+.theme-game .g-tab {
+  color: #fff;
+  background: linear-gradient(180deg, #4f86f0, #2457c7);
+  border-color: #9cc0ff;
+  box-shadow: 0 2px 0 #0d2a66;
+}
+.theme-game .g-tab.on { color: #1a1a1a; background: linear-gradient(180deg, #ffe58a, #f2b81f); border-color: #fff4c4; }
+.theme-game .g-arrow { color: #1a1a1a; background: #fff; border-color: #cfd6e6; box-shadow: none; }
+
+.theme-game .g-panel { border: 3px solid #d7dce8; background: #c9cfdd; }
+.theme-game .g-cat { background: hsl(var(--h) 70% 90%); }
+.theme-game .g-cat-name { background: #6b7184; }
+.theme-game .g-row { scrollbar-color: #8a90a3 transparent; }
+.theme-game .g-none { color: #333; }
+.theme-game .g-tile { color: #1a1a1a; }
+.theme-game .g-tile:hover:not([aria-disabled]) { background: rgba(255,255,255,.45); }
+.theme-game .g-tile .g-hex { background: #2c3a5c; }
+.theme-game .g-tile .g-hex::before { background: radial-gradient(circle at 50% 40%, #33415f, #1a2236); }
+.theme-game .g-tile.equipped .g-hex { background: linear-gradient(180deg, #6b98ff, #2c5bd0); }
+.theme-game .g-name { background: #fff; color: #1a1a1a; }
 
 #importAll .wide { width: 100%; margin: 6px 0 4px; }
 

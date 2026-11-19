@@ -40,7 +40,9 @@
     clipboard: null, // { plate, label, name }
     gameRunning: false,
     names: new Map(), // "player:index" -> name; GadgetTool only, not part of undo
-    view: loadView(),
+    view: loadPref("gadgettool.view", ["list", "game"]),
+    // Colours, separate from the view: "auto" gives each view its own (dark lists, game-coloured game style).
+    theme: loadPref("gadgettool.theme", ["auto", "dark", "game"]),
     filter: { text: "", category: "", cost: 0, showLocked: true },
   };
 
@@ -53,11 +55,22 @@
   const fullLabel = (n, i) => presetName(n, i) ? `${label(n, i)} “${presetName(n, i)}”` : label(n, i);
   const gadget = (id) => catalog.byId.get(id);
 
-  function loadView() {
-    try { return localStorage.getItem("gadgettool.view") === "game" ? "game" : "list"; } catch { return "list"; }
+  /** A remembered choice, or the first allowed value. Browser storage is a comfort only. */
+  function loadPref(key, allowed) {
+    try {
+      const value = localStorage.getItem(key);
+      return allowed.includes(value) ? value : allowed[0];
+    } catch {
+      return allowed[0];
+    }
   }
-  function saveView() {
-    try { localStorage.setItem("gadgettool.view", state.view); } catch { /* per-viewer comfort only */ }
+  function savePref(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* per-viewer comfort only */ }
+  }
+
+  function applyTheme() {
+    const colours = state.theme === "auto" ? (state.view === "game" ? "game" : "dark") : state.theme;
+    document.body.classList.toggle("theme-game", colours === "game");
   }
 
   function changedPlates() {
@@ -117,6 +130,7 @@
     $("#players").hidden = !open;
     $("#editorLayout").hidden = !open || game;
     $("#gameLayout").hidden = !open || !game;
+    applyTheme();
     placeSharedParts();
     renderTop();
     if (!open) return;
@@ -156,6 +170,7 @@
     $("#redoBtn").disabled = state.redo.length === 0;
     for (const b of $("#viewSwitch").children) b.classList.toggle("on", b.dataset.view === state.view);
     $("#viewSwitch").hidden = !open;
+    $("#themeSelect").value = state.theme;
     $("#saveBtn").disabled = n === 0;
     $("#saveBtn").textContent = n ? `Save (${n})` : "Save";
     $(".brand .tag").textContent = host.kind === "app" ? "early version" : "browser preview";
@@ -882,7 +897,12 @@
       const b = e.target.closest("button");
       if (!b || b.dataset.view === state.view) return;
       state.view = b.dataset.view;
-      saveView();
+      savePref("gadgettool.view", state.view);
+      render();
+    };
+    $("#themeSelect").onchange = (e) => {
+      state.theme = e.target.value;
+      savePref("gadgettool.theme", state.theme);
       render();
     };
 

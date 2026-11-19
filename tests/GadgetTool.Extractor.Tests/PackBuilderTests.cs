@@ -236,6 +236,13 @@ public class PackBuilderTests
     }
 
     [Fact]
+    public void The_super_masks_are_the_super_base_s_and_do_not_clash_with_other_pictures() =>
+        Assert.Multiple(
+            () => Assert.Equal(["super-mask.png", "super-outline.png"], PackBuilder.SuperMasks.Keys.Order(StringComparer.Ordinal)),
+            () => Assert.All(PackBuilder.SuperMasks.Values, t => Assert.StartsWith(PackBuilder.UiTextures["base-super.png"] + "_", t, StringComparison.Ordinal)),
+            () => Assert.Empty(PackBuilder.SuperMasks.Keys.Intersect(PackBuilder.UiTextures.Keys)));
+
+    [Fact]
     public void The_plate_crop_is_inside_every_frame_of_the_atlas()
     {
         var (x, y, w, h) = PackBuilder.PlateCrop;

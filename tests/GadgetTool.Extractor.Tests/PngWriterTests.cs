@@ -69,6 +69,25 @@ public class PngWriterTests
     }
 
     [Fact]
+    public void Finds_the_drawn_box_and_turns_a_grey_mask_into_transparency()
+    {
+        var rgba = new byte[4 * 3 * 4];
+        rgba[(1 * 4 + 2) * 4 + 3] = 255;
+        Assert.Equal((2, 1, 1, 1), PngWriter.DrawnBox(4, 3, rgba));
+        Assert.Null(PngWriter.DrawnBox(4, 3, new byte[4 * 3 * 4]));
+
+        // Opaque black, opaque mid-grey, half-transparent white.
+        var mask = PngWriter.MaskToAlpha([0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 128]);
+        Assert.Equal(new byte[] { 255, 255, 255, 0, 255, 255, 255, 128, 255, 255, 255, 128 }, mask);
+    }
+
+    [Fact]
+    public void Reads_grey_pixels_and_refuses_too_few() =>
+        Assert.Multiple(
+            () => Assert.Equal(new byte[] { 0, 0, 0, 255, 200, 200, 200, 255 }, PngWriter.GreyToRgba(new byte[] { 0, 200 }, 2, 1)),
+            () => Assert.Throws<ArgumentException>(() => PngWriter.GreyToRgba(new byte[] { 1 }, 2, 1)));
+
+    [Fact]
     public void Trims_the_transparent_margins()
     {
         // 4x3, one opaque pixel at (1,1) and one half-transparent at (2,2); alpha 0 elsewhere.

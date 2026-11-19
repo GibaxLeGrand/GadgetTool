@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GadgetTool</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">GadgetTool <span class="tag">mockup</span></div>
+    <div class="saveinfo" id="saveInfo"></div>
+    <button class="chip" id="gameState" title="Mockup only: click to pretend the game is running"></button>
+    <div class="spacer"></div>
+    <button id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
+    <button id="importBtn" title="Import a share code or a JSON file">Import…</button>
+    <button id="saveBtn" class="primary" title="Save (Ctrl+S)">Save</button>
+  </header>
+
+  <nav class="players" id="players" aria-label="Local players"></nav>
+
+  <main class="layout">
+    <aside class="presets" aria-label="Presets">
+      <div class="panel-title">Presets</div>
+      <div id="presets"></div>
+    </aside>
+
+    <section class="editor">
+      <div class="editor-head">
+        <div>
+          <h1 id="presetTitle"></h1>
+          <div class="sub" id="presetSub"></div>
+        </div>
+        <div class="actions">
+          <button id="copyBtn" title="Copy this preset (Ctrl+C)">Copy</button>
+          <button id="pasteHereBtn" title="Paste the copied preset here (Ctrl+V)">Paste here</button>
+          <button id="pasteToBtn" title="Paste this preset on other presets or players">Paste to…</button>
+          <button id="shareBtn" title="Share code and JSON export">Share…</button>
+          <button id="clearBtn" class="danger" title="Remove every gadget from this preset">Clear</button>
+        </div>
+      </div>
+      <div class="plate" id="plate"></div>
+      <ul class="issues" id="issues"></ul>
+      <p class="hint">Click a gadget in the list to add it, or drag it onto the plate. Drag a 1-slot gadget onto the
+        Super Slot. Click × or drag a gadget back to the list to remove it. Gadgets are arranged in the rows
+        automatically.</p>
+    </section>
+
+    <aside class="library" id="library" aria-label="Gadgets">
+      <div class="panel-title">Gadgets <span class="muted" id="libCount"></span></div>
+      <div class="lib-filters">
+        <input id="search" type="search" placeholder="Search gadgets" autocomplete="off">
+        <select id="category" aria-label="Category"></select>
+        <div class="seg" id="costFilter" role="group" aria-label="Slot cost">
+          <button data-cost="0" class="on">All</button>
+          <button data-cost="1">1</button>
+          <button data-cost="2">2</button>
+          <button data-cost="3">3</button>
+        </div>
+        <label class="check"><input type="checkbox" id="showLocked" checked> Show locked</label>
+      </div>
+      <div class="lib-list" id="libList"></div>
+    </aside>
+  </main>
+
+  <dialog id="pasteDialog">
+    <form method="dialog" class="dialog">
+      <h2>Paste <span id="pasteWhat"></span></h2>
+      <div class="paste-plate" id="pastePreview"></div>
+      <div class="paste-grid" id="pasteGrid"></div>
+      <label class="check"><input type="checkbox" id="pasteDrop"> Leave out the gadgets a player cannot use</label>
+      <p class="paste-summary" id="pasteSummary"></p>
+      <div class="dialog-buttons">
+        <button value="cancel">Cancel</button>
+        <button id="pasteGo" class="primary" value="paste">Paste</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shareDialog">
+    <form method="dialog" class="dialog">
+      <h2>Share <span id="shareWhat"></span></h2>
+      <label class="field">Share code
+        <span class="code-row"><input id="shareCode" readonly><button type="button" id="copyCodeBtn">Copy</button></span>
+      </label>
+      <p class="muted">Anyone with GadgetTool can paste this code. It holds the gadgets only, not the player.</p>
+      <h3>Export to a file</h3>
+      <div class="export-buttons">
+        <button type="button" data-export="preset">This preset</button>
+        <button type="button" data-export="player">All presets of this player</button>
+        <button type="button" data-export="all">Every player</button>
+      </div>
+      <div class="dialog-buttons"><button value="close" class="primary">Close</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog">
+      <h2>Import</h2>
+      <label class="field">Paste a share code (GT1-…) or the content of an export file
+        <textarea id="importText" rows="3" spellcheck="false"></textarea>
+      </label>
+      <div class="import-buttons">
+        <button type="button" id="importReadBtn" class="primary">Read</button>
+        <button type="button" id="importFileBtn">Open a file…</button>
+      </div>
+      <p class="error" id="importError"></p>
+      <div id="importList"></div>
+      <div class="dialog-buttons"><button value="close">Close</button></div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <input type="file" id="fileInput" accept=".json,application/json" hidden>
+
+  <script src="mock/mock-catalog.js"></script>
+  <!-- Optional, local only (never committed): real gadget names built from the wiki. -->
+  <script src="../extracted/wiki-catalog.js"></script>
+  <script src="js/backend-mock.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -132,16 +132,25 @@ public class PackBuilderTests
             ("EGadgetId::Twin", Gadget("Twin", 1, "Speed", 3, "Twin")),
             ("EGadgetId::twin", Gadget("twin", 1, "Speed", 4, "twin")),
             ("EGadgetId::Lost", Gadget("Lost", 1, "Nowhere", 5, "Lost")),
-            ("EGadgetId::Mute", Gadget("Mute", 1, "Speed", 6, null)));
+            ("EGadgetId::Mute", Gadget("Mute", 1, "Speed", 6, null)),
+            ("EGadgetId::Bad/Name", Gadget("Bad/Name", 1, "Speed", 7, "Bad")));
 
         var e = Assert.Throws<PackException>(() => PackBuilder.BuildCatalog(Tables(gadgets: Bad), Info));
 
-        Assert.Equal(5, e.Problems.Count);
+        Assert.Equal(6, e.Problems.Count);
+        Assert.Contains(e.Problems, p => p.Contains("'Bad/Name' has characters other than"));
         Assert.Contains(e.Problems, p => p.Contains("'Wide' takes 4 slots"));
         Assert.Contains(e.Problems, p => p.Contains("'Tall' is 2 rows high"));
         Assert.Contains(e.Problems, p => p.Contains("'twin' appears twice"));
         Assert.Contains(e.Problems, p => p.Contains("category 'Nowhere'"));
         Assert.Contains(e.Problems, p => p.Contains("'Mute' has no name in 'en'"));
+    }
+
+    [Fact]
+    public void Maps_game_asset_paths_to_pak_paths()
+    {
+        Assert.Equal("UNION/Content/05_Union/UI/Icon_A", PackBuilder.PackagePath("/Game/05_Union/UI/Icon_A"));
+        Assert.Throws<ArgumentException>(() => PackBuilder.PackagePath("/Engine/Icon_A"));
     }
 
     [Fact]

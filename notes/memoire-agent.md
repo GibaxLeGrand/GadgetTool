@@ -464,13 +464,23 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
 5. **Prior art.** The Crossworlds Gadget Randomizer
    (https://silviafoxgames.itch.io/crossworlds-gadget-randomizer) also runs in a browser
    (HTML5), so it most likely does not touch the save. No CrossWorlds save editor was found.
-6. **Online.** Is the gadget plate also stored server-side? Matters for how safe editing is.
+6. **Online.** Is the gadget plate also stored server-side? 2026-11-19, from the game's
+   files, a save copy and the web (`sessions/2026-11-19-online-and-write-test.md`): **no
+   sign of it**. Presets, unlocked gadgets and plate level live in `app.sav` (copied by Steam
+   Cloud); online services are Epic Online Services with an anonymous device login; the
+   server sends compensations that the save records as applied. The plate does go online
+   for an online race and inside Time Trial ghosts. Unknown: whether the game checks a
+   plate's validity online, what `net.sav` holds, whether EOS player data storage is used.
 7. ~~Game process name.~~ Answered 2026-11-19: `SonicRacingCrossWorldsSteam` (and the
    launcher `SonicRacingCrossWorlds`).
 8. **Duplicates.** Can the game equip one gadget twice? Not seen in the save. Cells: answered,
    the save stores each gadget's first cell.
 9. **Writing**: does the game accept a save the tool re-encrypts (it should: the bytes come
-   out identical), and does it check anything else (`_SaveCount`, Steam Cloud)? To test on a
-   copy first, with Gibax's OK.
+   out identical), and does it check anything else (`_SaveCount`, Steam Cloud)? 2026-11-19,
+   on a copy (`sessions/2026-11-19-online-and-write-test.md`): re-encryption and unchanged
+   writes are byte-identical, an edit reads back right, the save has **no checksum**,
+   GadgetTool leaves `_SaveCount` as it is, Steam Cloud syncs `app.sav` with its SHA-1.
+   **Still to do: Gibax's test in the game**, following the procedure in that note (backup,
+   Steam Cloud off for the first test, one change on an unused preset, offline race).
 10. **Lower plates**: how a 2- to 5-slot plate maps to cells (a save with a lower plate is
     needed). The page assumes left to right, top row first (see "The game's plates").

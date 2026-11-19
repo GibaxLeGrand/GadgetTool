@@ -38,6 +38,7 @@ public sealed class LocalizedText
 /// <summary>A gadget with its texts in every language the data has.</summary>
 /// <param name="CategoryId">A key for the category that does not change with the language (grouping, colours).</param>
 /// <param name="SuperEffect">What it does in the Super Slot; null or empty when it has no Super effect.</param>
+/// <param name="Base">The frame the game draws the icon on: "kit", "mini", or null for the usual one.</param>
 public sealed record LocalizedGadget(
     string Id,
     int SlotCost,
@@ -45,7 +46,8 @@ public sealed record LocalizedGadget(
     string CategoryId,
     LocalizedText Category,
     LocalizedText Description,
-    LocalizedText? SuperEffect = null);
+    LocalizedText? SuperEffect = null,
+    string? Base = null);
 
 /// <summary>
 /// The gadget list with the game's texts in all its languages, as the extractor writes it.
@@ -138,7 +140,8 @@ public sealed class LocalizedCatalog
                 g.Description.Get(lang, DefaultLanguage),
                 g.CategoryId,
                 g.SuperEffect?.Get(lang, DefaultLanguage),
-                CategoryColors.GetValueOrDefault(g.CategoryId))),
+                CategoryColors.GetValueOrDefault(g.CategoryId),
+                g.Base)),
             Source, GameVersion);
         _byLanguage[lang] = catalog;
         return catalog;

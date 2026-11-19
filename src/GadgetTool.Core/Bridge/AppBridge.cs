@@ -42,6 +42,9 @@ public sealed record AppBridgeOptions(
 {
     /// <summary>The URL of a gadget's icon for the page, or null to draw a placeholder.</summary>
     public Func<string, string?>? IconUrl { get; init; }
+
+    /// <summary>The URL of the data pack's folder, where the page finds <c>ui/</c> (the game's icon bases); null without a pack.</summary>
+    public string? PackUrl { get; init; }
 }
 
 /// <summary>
@@ -108,6 +111,7 @@ public sealed class AppBridge(AppBridgeOptions options)
             ["gameVersion"] = options.Catalog.GameVersion.IsKnown ? options.Catalog.GameVersion.ToString() : null,
             ["language"] = _language,
             ["languages"] = new JsonArray([.. options.Catalog.Languages.Select(l => (JsonNode)l)]),
+            ["packUrl"] = options.PackUrl,
             ["gadgets"] = new JsonArray([.. Gadgets.Gadgets.Select(g => (JsonNode)new JsonObject
             {
                 ["id"] = g.Id,
@@ -118,6 +122,7 @@ public sealed class AppBridge(AppBridgeOptions options)
                 ["description"] = g.Description,
                 ["superEffect"] = g.SuperEffect,
                 ["categoryColor"] = g.CategoryColor,
+                ["base"] = g.Base,
                 ["icon"] = options.IconUrl?.Invoke(g.Id),
             })]),
         };

@@ -64,7 +64,8 @@ public static class CatalogJson
                 categoryId,
                 category,
                 Texts(g["description"], defaultLanguage, $"gadget '{id}' description"),
-                Texts(g["superEffect"], defaultLanguage, $"gadget '{id}' Super effect")));
+                Texts(g["superEffect"], defaultLanguage, $"gadget '{id}' Super effect"),
+                Text(g, "base") is "kit" or "mini" ? Text(g, "base") : null));
         }
 
         // Optional: the game's category colours ({ "id", "color" }), written by the extractor.

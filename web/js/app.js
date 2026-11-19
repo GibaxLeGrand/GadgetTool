@@ -128,15 +128,16 @@
     return `${catalog.packUrl}/ui/base-${name}.png`;
   }
   /**
-   * As in the game: the gadget's icon drawn on its base. A 2- or 3-slot base on the plate is
-   * stretched to its cells' width by its middle, its pointed ends kept as they are.
+   * As in the game: the gadget's icon drawn on its base. On the game's plate a 2- or 3-slot
+   * base is the whole texture drawn twice as wide (the game shows its 1024x512 textures at
+   * 2048x512), which covers its cells; on our own plate it is stretched by its middle.
    */
   function art(g, where) {
     // Absolute: a relative url() in a CSS variable would be read against the stylesheet.
     const url = new URL(baseUrl(g, where), document.baseURI).href;
     const long = where === "plate" && g.slotCost > 1;
     return h("span", { class: "art" + (long ? " long" : ""), "aria-hidden": "true", style: long ? `--base:url("${url}")` : null },
-      long ? null : h("img", { class: "art-base", src: url, alt: "", draggable: "false" }),
+      h("img", { class: "art-base", src: url, alt: "", draggable: "false" }),
       h("img", { class: "art-icon", src: g.icon, alt: "", draggable: "false" }));
   }
 

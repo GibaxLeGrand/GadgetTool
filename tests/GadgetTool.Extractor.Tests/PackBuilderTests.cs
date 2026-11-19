@@ -165,13 +165,13 @@ public class PackBuilderTests
         Assert.Null(gadgets["Speed_A"]["base"]);
         Assert.Equal("mini", (string?)gadgets["Speed_Mini"]["base"]);
         Assert.Equal("kit", (string?)gadgets["Big_Kit"]["base"]);
-        Assert.Equal("ex", (string?)gadgets["Ex_Kit"]["base"]);
+        Assert.Equal("kit", (string?)gadgets["Ex_Kit"]["base"]); // advanced kits too have the kit frame
     }
 
     [Fact]
     public void The_ui_folder_holds_every_base_the_page_asks_for() =>
         Assert.Equal(
-            ["base-1.png", "base-2.png", "base-3.png", "base-ex-kit-1.png", "base-ex-kit-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png"],
+            ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png"],
             PackBuilder.UiTextures.Keys.Order(StringComparer.Ordinal));
 
     [Fact]

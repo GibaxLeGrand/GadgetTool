@@ -48,11 +48,10 @@ internal sealed class PackException(IReadOnlyList<string> problems)
 /// <item>Only categories that hold a gadget are listed.</item>
 /// <item>Ids hold only ASCII letters, digits and '_': each names its icon file, <c>icons/&lt;id&gt;.png</c>.</item>
 /// <item>The icon's base (the frame the game draws it on): <c>mini</c> for the gadgets of
-/// <c>DA_MiniGadgetList</c>, <c>ex</c> for the "AdvancedKit" category (the EX kits: Spin Dash
-/// Kit...), <c>kit</c> for the other categories whose id ends with "Kit" (all 3-slot in
-/// 2.0.0), none for the others. The game picks it in native code
-/// (<c>EquipmentGadgetIcon::SetIconBaseShape</c>); this rule matches its material lists, and
-/// Gibax named the Spin Dash kit as EX.</item>
+/// <c>DA_MiniGadgetList</c>, <c>kit</c> for the categories whose id ends with "Kit" (all
+/// 3-slot in 2.0.0; Gibax checked in the game that the advanced kits too, Spin Dash kit
+/// included, have the kit frame), none for the others. The game picks it in native code
+/// (<c>EquipmentGadgetIcon::SetIconBaseShape</c>); this rule matches its material lists.</item>
 /// </list>
 /// </remarks>
 internal static class PackBuilder
@@ -60,9 +59,6 @@ internal static class PackBuilder
     public const string GadgetEnumPrefix = "EGadgetId::";
     public const string CategoryEnumPrefix = "EGadgetCategory::";
     public const string PlateEnumPrefix = "EGadgetPlateId::";
-
-    /// <summary>The category of the EX kits, drawn on the pink kit bases.</summary>
-    public const string ExKitCategory = "AdvancedKit";
 
     public static JsonObject BuildCatalog(GameTables tables, PackInfo info)
     {
@@ -136,7 +132,6 @@ internal static class PackBuilder
                 ["superEffect"] = Texts(tables.GadgetRows, rowName, "ExplanationSpecial", languages),
                 ["plate"] = Strip(Str(row, "plateId") ?? "", PlateEnumPrefix),
                 ["base"] = mini.Contains(id) ? "mini"
-                    : categoryId == ExKitCategory ? "ex"
                     : categoryId.EndsWith("Kit", StringComparison.Ordinal) ? "kit"
                     : null,
                 ["icon"] = AssetPath((row["IconTexture"] as JsonObject)?["AssetPathName"]),
@@ -186,8 +181,6 @@ internal static class PackBuilder
         ["base-3.png"] = IconBases + "UI_GadgetIcon_Base_03",
         ["base-kit-1.png"] = IconBases + "UI_GadgetIcon_Base_01_Kit_001",
         ["base-kit-3.png"] = IconBases + "UI_GadgetIcon_Base_03_Kit_001",
-        ["base-ex-kit-1.png"] = IconBases + "UI_GadgetIcon_Base_01_Kit_001_EX",
-        ["base-ex-kit-3.png"] = IconBases + "UI_GadgetIcon_Base_03_Kit_002_EX",
         ["base-mini.png"] = IconBases + "UI_GadgetIcon_Base_01_Mini",
         ["base-super.png"] = IconBases + "UI_GadgetIcon_Base_01_Super_01",
     };

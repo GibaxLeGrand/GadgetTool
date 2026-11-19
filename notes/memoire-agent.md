@@ -168,8 +168,8 @@ import.
     hashes) and `data/<version>/catalog.json`. The app picks the pack for the installed
     game (Steam build id from the appmanifest: no key needed on the player's side), falls
     back to the newest older pack with a warning, and can download new packs on demand
-    ("Check for data updates", from the GitHub repository, hashes checked; never
-    automatic). **Icons: in the release (Gibax, 2026-11-19)**: data packs in the release
+    ("Check for data updates", from the repository's GitHub Releases: release assets,
+    never files in git; hashes checked; never automatic). **Icons: in the release (Gibax, 2026-11-19)**: data packs in the release
     archive (and the online packs) include the gadget icons; they never go into the git
     repository. Players with the AES key can still read them from their own install.
   - Gibax's two paths (same day): **offline, exact**: the player gives the AES key and the

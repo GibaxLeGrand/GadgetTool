@@ -435,6 +435,25 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   usual base at 0.8, so the page draws Mini icons at 0.8. A sheet of all 148 gadgets on their
   bases: `extracted/bases_sheet.html` (git-ignored, served from the repository root).
 
+## Bases as the game sizes them, and the Super Slot's gold (2026-11-19, branch `ui/one-slot-bases`)
+
+- Gibax: 1-slot gadgets left a gap in their cell. `WBP_GadgetIcon` draws `Base_01` (and the
+  list's `DMY_Frame`) in a 580x512 image: the 512x512 1-slot textures are drawn 580/512 wider.
+  The page does the same for every 1-slot base (usual, kit, Mini, Super). Validated by Gibax.
+- The Super Slot's gold: `FrameIconSpMaterial` = `M_UI_TitlePlateR_Gadget`, whose cached
+  defaults give its textures (the gold base, `_Mask_Outline`, `_Mask`,
+  `UI_CMN_Material_Scroll_MaskAlpha2`), its colours (`#FFD235`, `#FFA346`, `#FFF800`), a speed
+  (10) and its functions (`Blend_LinearDodge`, `VectorToRadialValue`). The graph itself is not
+  in the cooked files, so how bright each layer is was guessed. The extractor writes both masks
+  (grey `PF_G8`, decoded now) as `super-outline.png` / `super-mask.png`, cut like the base.
+- Gibax's in-game capture of a Grand Master plate was overlaid on the page (scale found from
+  two fixed features, the wings emblem and the bottom-left stripes: 1.1471 crop pixels per
+  capture pixel, both axes within 0.05 %). Long bases, Minis, the Super Slot and icons sit
+  where the game puts them; the title was smaller, wider and more orange: now 72 picture
+  pixels, letters at 0.92 width, paler gold, shrunk to fit long names. The Super Slot is moved
+  4 pixels right, onto the centre of the picture's gold hole (1261; the widget gives 1257),
+  as Gibax asked. Local check files (git-ignored): `extracted/ref_ingame_plate.webp`.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

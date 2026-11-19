@@ -157,8 +157,10 @@ import.
     states its version.
   - Limits: a new save format, or a renamed table or field, still needs a GadgetTool update
     (the asset path and field names could live in a small config shipped with the
-    database); if the refresh fails, keep the last good list and say so. With mods
-    (`~mods` paks) the list would include modded gadgets: offer "with / without mods".
+    database); if the refresh fails, keep the last good list and say so.
+  - **Mods: ignore them** (Gibax): gadgets are not modded, it is a taboo in the community
+    for now. The reader loads the base game's paks only and skips `~mods`; no "with mods"
+    option.
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

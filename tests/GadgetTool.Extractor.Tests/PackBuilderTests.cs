@@ -147,6 +147,31 @@ public class PackBuilderTests
     }
 
     [Fact]
+    public void Each_gadget_gets_the_base_the_game_draws_it_on()
+    {
+        JsonObject Rows3(string lang) => Rows(
+            ("EGadgetId::Speed_A", Gadget("Speed_A", 1, "Speed", 1, "Speed A")),
+            ("EGadgetId::Speed_Mini", Gadget("Speed_Mini", 1, "Speed", 2, "Speed Mini")),
+            ("EGadgetId::Big_Kit", Gadget("Big_Kit", 3, "StarterKit", 3, "Big Kit")));
+        JsonObject Categories3(string lang) => Rows(
+            ("EGadgetCategory::Speed", Category("Speed", 1)),
+            ("EGadgetCategory::StarterKit", Category("Starter Kit", 2)));
+        var tables = Tables(Rows3, Categories3) with { MiniGadgets = ["EGadgetId::Speed_Mini"] };
+
+        var gadgets = PackBuilder.BuildCatalog(tables, Info)["gadgets"]!.AsArray().Cast<JsonObject>().ToDictionary(g => (string)g["id"]!);
+
+        Assert.Null(gadgets["Speed_A"]["base"]);
+        Assert.Equal("mini", (string?)gadgets["Speed_Mini"]["base"]);
+        Assert.Equal("kit", (string?)gadgets["Big_Kit"]["base"]);
+    }
+
+    [Fact]
+    public void The_ui_folder_holds_every_base_the_page_asks_for() =>
+        Assert.Equal(
+            ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png"],
+            PackBuilder.UiTextures.Keys.Order(StringComparer.Ordinal));
+
+    [Fact]
     public void Maps_game_asset_paths_to_pak_paths()
     {
         Assert.Equal("UNION/Content/05_Union/UI/Icon_A", PackBuilder.PackagePath("/Game/05_Union/UI/Icon_A"));

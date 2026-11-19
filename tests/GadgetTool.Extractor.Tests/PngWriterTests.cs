@@ -54,6 +54,25 @@ public class PngWriterTests
         Assert.Equal(0xAE426082u, PngWriter.Crc(0xFFFFFFFFu, "IEND"u8) ^ 0xFFFFFFFFu);
 
     [Fact]
+    public void Trims_the_transparent_margins()
+    {
+        // 4x3, one opaque pixel at (1,1) and one half-transparent at (2,2); alpha 0 elsewhere.
+        var rgba = new byte[4 * 3 * 4];
+        rgba[(1 * 4 + 1) * 4 + 3] = 255;
+        rgba[(2 * 4 + 2) * 4 + 3] = 100;
+        rgba[(2 * 4 + 2) * 4] = 7;
+
+        var (w, h, cut) = PngWriter.TrimTransparent(4, 3, rgba);
+
+        Assert.Equal((2, 2), (w, h));
+        Assert.Equal(255, cut[3]);          // (1,1) is now (0,0)
+        Assert.Equal(7, cut[(1 * 2 + 1) * 4]); // (2,2) is now (1,1)
+
+        var empty = new byte[2 * 2 * 4];
+        Assert.Equal((2, 2), (PngWriter.TrimTransparent(2, 2, empty).Width, PngWriter.TrimTransparent(2, 2, empty).Height));
+    }
+
+    [Fact]
     public void Refuses_pixels_of_the_wrong_size()
     {
         Assert.Throws<ArgumentException>(() => PngWriter.Encode(2, 2, new byte[15]));

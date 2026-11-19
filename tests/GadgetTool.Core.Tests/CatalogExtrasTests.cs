@@ -16,9 +16,9 @@ public sealed class CatalogExtrasTests : IDisposable
             { "id": "odd", "sort": 2, "color": "yellow", "name": { "en": "Odd" } }
           ],
           "gadgets": [
-            { "id": "t.ring", "slotCost": 1, "categoryId": "rings", "name": { "en": "Ring", "fr": "Anneau" },
+            { "id": "t.ring", "slotCost": 1, "categoryId": "rings", "name": { "en": "Ring", "fr": "Anneau" }, "base": "mini",
               "superEffect": { "en": "Even more rings.", "fr": "Encore plus d'anneaux." } },
-            { "id": "t.odd", "slotCost": 2, "categoryId": "odd", "name": { "en": "Odd" } }
+            { "id": "t.odd", "slotCost": 2, "categoryId": "odd", "name": { "en": "Odd" }, "base": "round" }
           ]
         }
         """;
@@ -36,9 +36,12 @@ public sealed class CatalogExtrasTests : IDisposable
         Assert.Equal("Encore plus d'anneaux.", ring.SuperEffect);
         Assert.Equal("#FEF7B2", ring.CategoryColor);
 
+        Assert.Equal("mini", ring.Base);
+
         Assert.True(catalog.For("en").TryGet("t.odd", out var odd));
         Assert.Null(odd.SuperEffect);
         Assert.Null(odd.CategoryColor); // "yellow" is not #RRGGBB
+        Assert.Null(odd.Base);          // only "kit" and "mini" are known
     }
 
     [Fact]
@@ -51,13 +54,18 @@ public sealed class CatalogExtrasTests : IDisposable
         var bridge = new AppBridge(new AppBridgeOptions(
             CatalogJson.Parse(Pack), new DevJsonSaveFormat(), new FakeUi(), new NotRunning(), TimeProvider.System,
             _temp.File("backups"), null, _temp.File("sample.json"),
-            new PresetNameStore(_temp.File("names.json")), new SeenGameStore(_temp.File("seen.json"))));
+            new PresetNameStore(_temp.File("names.json")), new SeenGameStore(_temp.File("seen.json")))
+        {
+            PackUrl = "https://pack.test",
+        });
 
         var answer = JsonNode.Parse(bridge.Handle("""{ "id": 1, "method": "catalog", "params": { "language": "fr" } }"""))!;
         var ring = answer["result"]!["gadgets"]!.AsArray().Single(g => (string?)g!["id"] == "t.ring")!;
 
+        Assert.Equal("https://pack.test", (string?)answer["result"]!["packUrl"]);
         Assert.Equal("Encore plus d'anneaux.", (string?)ring["superEffect"]);
         Assert.Equal("#FEF7B2", (string?)ring["categoryColor"]);
+        Assert.Equal("mini", (string?)ring["base"]);
     }
 
     private static string RepoFile(string relative)

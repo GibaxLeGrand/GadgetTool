@@ -1,0 +1,74 @@
+{
+  "devSave": "gadgettool",
+  "version": "dev-1",
+  "players": [
+    {
+      "player": 1, "rows": [3, 3], "superSlot": true,
+      "unlocked": ["dev.ring_magnet", "dev.ring_saver", "dev.lap_ring_bonus", "dev.ring_cap_180", "dev.ring_leech", "dev.ring_fortune_kit", "dev.item_luck", "dev.item_hold", "dev.item_swap", "dev.shield_start", "dev.double_item_box", "dev.item_rush_kit", "dev.quick_start", "dev.landing_boost", "dev.draft_boost", "dev.long_boost", "dev.boost_chain_kit", "dev.fast_charge_1", "dev.fast_charge_2", "dev.tight_drift", "dev.charge_keeper", "dev.drift_master_kit", "dev.speed_5", "dev.accel_5", "dev.power_5", "dev.all_stats_4", "dev.top_speed_kit", "dev.spin_guard", "dev.trap_guard", "dev.rival_radar"],
+      "plates": [
+        { "gadgets": ["dev.boost_chain_kit", "dev.ring_fortune_kit"], "super": "dev.landing_boost" },
+        { "gadgets": ["dev.item_swap", "dev.drift_master_kit", "dev.fast_charge_1"], "super": "dev.landing_boost" },
+        { "gadgets": ["dev.speed_5", "dev.shield_start", "dev.fast_charge_2", "dev.tight_drift"] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": ["dev.accel_5", "dev.lap_ring_bonus", "dev.rival_radar", "dev.draft_boost", "dev.item_hold"], "super": "dev.speed_5" },
+        { "gadgets": [] },
+        { "gadgets": ["dev.rival_radar", "dev.tight_drift", "dev.charge_keeper", "dev.accel_5"], "super": "dev.spin_guard" },
+        { "gadgets": [] }
+      ]
+    },
+    {
+      "player": 2, "rows": [3, 3], "superSlot": false,
+      "unlocked": ["dev.ring_magnet", "dev.start_ring_bonus", "dev.ring_leech", "dev.item_luck", "dev.item_hold", "dev.item_swap", "dev.shield_start", "dev.item_rush_kit", "dev.quick_start", "dev.long_boost", "dev.boost_chain_kit", "dev.fast_charge_2", "dev.tight_drift", "dev.accel_5", "dev.handling_5", "dev.power_5", "dev.comeback_assist", "dev.trap_guard", "dev.rival_radar"],
+      "plates": [
+        { "gadgets": ["dev.ring_leech", "dev.comeback_assist", "dev.accel_5", "dev.trap_guard"] },
+        { "gadgets": ["dev.rival_radar", "dev.comeback_assist", "dev.tight_drift", "dev.accel_5"] },
+        { "gadgets": ["dev.item_hold", "dev.ring_leech", "dev.boost_chain_kit"] },
+        { "gadgets": ["dev.long_boost", "dev.shield_start", "dev.start_ring_bonus", "dev.item_hold"] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": ["dev.power_5", "dev.item_rush_kit", "dev.long_boost"] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": ["dev.ring_saver"], "note": "P2 does not own this gadget, as a game patch could leave a preset." }
+      ]
+    },
+    {
+      "player": 3, "rows": [3, 2], "superSlot": false,
+      "unlocked": ["dev.ring_saver", "dev.lap_ring_bonus", "dev.item_luck", "dev.item_hold", "dev.item_rush_kit", "dev.landing_boost", "dev.bump_boost", "dev.draft_boost", "dev.fast_charge_1", "dev.fast_charge_2", "dev.tight_drift", "dev.handling_5", "dev.top_speed_kit", "dev.trap_guard"],
+      "plates": [
+        { "gadgets": ["dev.item_hold", "dev.handling_5", "dev.fast_charge_1", "dev.lap_ring_bonus", "dev.tight_drift"] },
+        { "gadgets": ["dev.lap_ring_bonus", "dev.handling_5", "dev.ring_saver", "dev.item_luck", "dev.item_hold"] },
+        { "gadgets": ["dev.bump_boost", "dev.item_rush_kit", "dev.handling_5"] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] }
+      ]
+    },
+    {
+      "player": 4, "rows": [3, 0], "superSlot": false,
+      "unlocked": ["dev.ring_magnet", "dev.item_luck", "dev.boost_chain_kit", "dev.trap_guard"],
+      "plates": [
+        { "gadgets": ["dev.item_luck", "dev.ring_magnet", "dev.trap_guard"] },
+        { "gadgets": ["dev.boost_chain_kit"] },
+        { "gadgets": ["dev.item_luck", "dev.ring_magnet", "dev.trap_guard"] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] },
+        { "gadgets": [] }
+      ]
+    }
+  ],
+  "progress": {
+    "note": "Stands for everything else a real save holds: GadgetTool must keep it as it is.",
+    "races": 128
+  }
+}

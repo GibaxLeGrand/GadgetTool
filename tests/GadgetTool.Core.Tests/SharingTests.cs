@@ -30,7 +30,7 @@ public class ShareCodeTests
     [Fact]
     public void Codes_match_the_web_ui()
     {
-        // Produced by web/js/backend-mock.js for the same plate: both sides must agree.
+        // Produced by web/js/rules.js for the same plate: both sides must agree.
         const string fromWebUi = "GT1-AQIB06Lq_83AVX8UvFV8vPs";
         var plate = new GadgetPlate([TwoA, OneA], superGadgetId: OneB);
 

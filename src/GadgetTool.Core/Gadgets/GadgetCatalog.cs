@@ -9,9 +9,12 @@ public sealed class GadgetCatalog
     private readonly Dictionary<string, GadgetDefinition> _byId;
     private readonly Dictionary<uint, GadgetDefinition> _byShareHash;
 
-    public GadgetCatalog(IEnumerable<GadgetDefinition> gadgets)
+    /// <param name="gadgets">Every gadget, in display order.</param>
+    /// <param name="source">Where the list comes from, for display ("made-up gadgets", the game's files...).</param>
+    public GadgetCatalog(IEnumerable<GadgetDefinition> gadgets, string source = "")
     {
         ArgumentNullException.ThrowIfNull(gadgets);
+        Source = source ?? "";
 
         var all = gadgets.ToList();
         _byId = new Dictionary<string, GadgetDefinition>(StringComparer.Ordinal);
@@ -37,6 +40,8 @@ public sealed class GadgetCatalog
     }
 
     public IReadOnlyList<GadgetDefinition> Gadgets { get; }
+
+    public string Source { get; }
 
     public bool TryGet(string id, out GadgetDefinition gadget) => _byId.TryGetValue(id, out gadget!);
 

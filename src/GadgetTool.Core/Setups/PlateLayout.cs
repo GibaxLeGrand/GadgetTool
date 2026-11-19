@@ -35,6 +35,14 @@ public sealed class PlateLayout
     /// <summary>Slots in the rows (the Super Slot not counted).</summary>
     public int SlotCount => RowSizes.Sum();
 
+    /// <summary>
+    /// The plate's level as the game names it (wiki: Normal 2 slots, Bronze 3, Silver 4, Gold 5,
+    /// Master 6, Grand Master 6 + Super Slot). For display only.
+    /// </summary>
+    public string LevelName => HasSuperSlot
+        ? "Grand Master"
+        : SlotCount switch { <= 2 => "Normal", 3 => "Bronze", 4 => "Silver", 5 => "Gold", _ => "Master" };
+
     public bool SameAs(PlateLayout other) => HasSuperSlot == other.HasSuperSlot && RowSizes.SequenceEqual(other.RowSizes);
 
     /// <summary>

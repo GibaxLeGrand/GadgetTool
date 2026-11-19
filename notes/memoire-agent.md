@@ -106,7 +106,20 @@ import.
   follows the game's screenshot: a title band ("GRAND MASTER PLATE"), two rows of three, and
   the gold Super Slot on the right. Small windows scale the unit down; they never change its
   proportions.
-- Local test catalog: `extracted/wiki-catalog.js` (git-ignored), built from the wiki's raw
+- **Gibax's feedback on the first app (2026-11-19)**, all done the same day:
+  - Keep share codes; add a file to save and send: **`.gtpresets`** (JSON, format
+    `gadgettool.setups`: name, player, preset letter, gadgets, super). "Import…" sits next
+    to "Share…" and imports onto the selected preset; a multi-preset file can also go back
+    where it came from.
+  - **Preset names, GadgetTool only** (the game has none): a small title under each preset.
+    Stored in `%LOCALAPPDATA%\GadgetTool\preset-names.json`, keyed by the save's full path,
+    never in the save; not part of undo. Share codes carry no name; files do.
+  - Slot counts include the Super Slot: **7/7** on a Grand Master plate.
+  - He prefers the scrolling lists (default). The **Game style** view is an option: preset
+    tabs A–J over a blue plate, a description box, gadgets in rows by category with the slot
+    cost on top (his screenshot is of an older version with A–E and no Super Slot).
+  - More UI changes to come from him, to copy the game's look more closely.
+- Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.
 - Icons: the final app reads them from the game files. Wiki icons may be used **locally**

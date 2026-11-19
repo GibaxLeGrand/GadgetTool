@@ -17,8 +17,27 @@ data/
     icons/<id>.png      one icon per gadget (release only, never in git)
 ```
 
-`index.json` (planned) lets the app pick the pack for the installed game from the Steam
-build id in `steamapps/appmanifest_2486820.acf`, without any key.
+`index.json` lets the app pick the pack for the installed game from the Steam build id in
+`steamapps/appmanifest_2486820.acf` (found through Steam's `libraryfolders.vdf`, read only),
+without any key. The extractor writes and updates it (other versions are kept; a version
+extracted again keeps the build ids it listed). Read by `PackIndex` (Core):
+
+```json
+{
+  "format": "gadgettool.packs",
+  "version": 1,
+  "packs": [
+    { "gameVersion": "2.0.0", "steamBuildIds": ["24996408"], "folder": "2.0.0",
+      "files": { "catalog.json": "<sha-256>", "icons/<id>.png": "<sha-256>" } }
+  ]
+}
+```
+
+The app takes `--data <folder>`, or a `data` folder next to its exe that holds an
+`index.json`, and opens the pack made from the installed build; without one, the newest pack,
+with a warning. `--catalog <file>` still names a catalog directly. The SHA-256 are there for
+downloaded packs (not done yet). `folder` must be a plain folder name: no `..`, no absolute
+path.
 
 ## `catalog.json`
 

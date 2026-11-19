@@ -178,11 +178,16 @@ lock (`UI_GudgetCustom_LockIcon`; the "+" is `UI_GudgetCustom_PlusMark`). Withou
 page draws its own plate.
 
 As in the game (Gibax): **in the gadget list every gadget is drawn on a 1-slot base** (the
-slot cost is shown above it); **on the plate, on its real size**, a 2- or 3-slot base
-stretched by its middle to its cells' width (the pointed ends, 115 of 435 pixels on each
-side, kept as drawn). The page draws the 512-pixel icon centred over the base, at 512/435 of
-the base's height, as the two textures line up in the game. The pink "EX" bases
-(`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are not used for any gadget seen so far and are
+slot cost is shown above it); **on the plate, on its real size**. The game draws its
+1024x512 2- and 3-slot textures (`Base_02`, `Base_03` in `WBP_GadgetIcon`) at 2048x512: the
+whole drawing twice as wide, which covers 2 cells (1132 of 1135 icon pixels, a cell being 512
+and the next one 623 further at the plate's 0.6 scale) or 3 cells (1756 of 1758); the small
+hexagons at the ends of the kit frame are drawn squashed in the texture for that. The page
+draws them the same way on the game's plate, centred on their cells (on its own plate,
+without a data pack, it stretches them by the middle). The page draws the 512-pixel icon
+centred over the base, at 512/435 of the base's height, as the two textures line up in the
+game. The pink "EX" bases (`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are for the festival
+rules' EX gadgets (`WBP_StatusInfo_Sub_EXGadgetDetail`, `festa_rule_gadget_ex`) and are
 not exported.
 
 Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game

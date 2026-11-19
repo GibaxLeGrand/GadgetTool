@@ -296,7 +296,28 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   123 unlocked gadgets all in the catalog, French names, and **no rule problem on any of the
   40 presets** (slot costs, rows, Super Slot, unlocked). The model's assumptions hold on real
   data. The app itself was not launched (Gibax's OK needed).
-- Saving a real save is still refused (`Write`); the page reports the error.
+- Saving a real save was refused on this branch; writing comes with the next one.
+
+## Writing the real save (2026-11-19, branch `core/crossworlds-save-write`)
+
+- `CrossWorldsSaveFormat.Write` rebuilds only `GadgetPresetDataLists` and
+  `SpGadgetPresetDataLists`, and inside them only the presets whose rows (or Super Slot)
+  changed; the two lists are spliced back and the size of `_UserMachineAssemblyData` is
+  patched. Every other byte stays. `GvasSerializer` writes the subset the lists use.
+- Safety: refuses an unchecked game version (`WritableRomVersions` = { 20000 }); refuses to
+  write unless the unchanged lists serialize back byte for byte; copies the entry layout
+  from an entry the save has; reads the result back and checks every preset before
+  returning it; unchanged setups return the original bytes.
+- Cells: `PlateLayout.Arrange` picks rows (biggest gadgets first), then cells left to right
+  in the plate's order, row r starting at cell 3r; Super Slot at cell 6. An emptied preset
+  is written as six `NonGadget` cells, as the game does; no Super Slot = empty list. Only
+  the Super Slot changed → the rows keep the game's cells.
+- The format needs slot costs to place gadgets (`slotCost`, given by the app from the
+  catalog).
+- Checked on the measuring PC with **copies** only (`extracted/tools/check_write.cs`,
+  output in `samples/W`, git-ignored): unchanged setups give the identical file; changing
+  P2 B and P3 J's Super Slot changes exactly those presets; before the lists only the 4-byte
+  size field differs, everything after them is identical. Not loaded in the game yet.
 
 ## Open questions
 

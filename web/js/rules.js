@@ -35,6 +35,13 @@
 
   const slotCount = (player) => player.rows.reduce((a, b) => a + b, 0);
 
+  /** Every slot of the plate, the Super Slot included (7 on a Grand Master plate). */
+  const capacity = (player) => slotCount(player) + (player.superSlot ? 1 : 0);
+
+  /** Slots the plate's known gadgets take, the Super Slot included. */
+  const used = (plate, catalog) =>
+    plate.gadgets.reduce((n, id) => n + (catalog.byId.get(id)?.slotCost ?? 0), 0) + (plate.super ? 1 : 0);
+
   /** PlateLayout.LevelName in the Core. */
   function levelName(rows, superSlot) {
     if (superSlot) return "Grand Master";
@@ -198,14 +205,18 @@
     return { gadgets: ids.slice(0, count), super: hasSuper ? ids[count] : null };
   }
 
-  // ---- JSON export (SetupJson in the Core: same format) ------------------------------
+  // ---- Presets files (SetupJson in the Core: same format, extension .gtpresets) ------
 
+  const FILE_EXTENSION = ".gtpresets";
+
+  /** entries: [{ name, from: { player, index } | null, plate }] */
   function exportJson(entries) {
     return JSON.stringify({
       format: "gadgettool.setups",
       version: 1,
       plates: entries.map((e) => ({
-        ...(e.label ? { label: e.label } : {}),
+        ...(e.name ? { name: e.name } : {}),
+        ...(e.from ? { player: e.from.player, preset: String.fromCharCode(65 + e.from.index) } : {}),
         gadgets: e.plate.gadgets,
         ...(e.plate.super ? { super: e.plate.super } : {}),
       })),
@@ -214,14 +225,20 @@
 
   function importJson(text) {
     let doc;
-    try { doc = JSON.parse(text); } catch (e) { throw new Error("Not valid JSON: " + e.message); }
-    if (!doc || doc.format !== "gadgettool.setups") throw new Error("Not a GadgetTool setups file.");
+    try { doc = JSON.parse(text); } catch (e) { throw new Error("Not a share code, nor a presets file: " + e.message); }
+    if (!doc || doc.format !== "gadgettool.setups") throw new Error("Not a GadgetTool presets file.");
     if (doc.version > 1) throw new Error(`The file uses version ${doc.version}; this GadgetTool reads up to 1.`);
-    if (!Array.isArray(doc.plates)) throw new Error("The file has no plates list.");
+    if (!Array.isArray(doc.plates)) throw new Error("The file has no presets list.");
     return doc.plates.map((p, i) => {
       if (!p || !Array.isArray(p.gadgets) || p.gadgets.some((id) => typeof id !== "string" || !id.trim()))
-        throw new Error(`Plate ${i + 1} has no valid gadgets list.`);
-      return { label: typeof p.label === "string" ? p.label : null, plate: { gadgets: p.gadgets.slice(), super: p.super || null } };
+        throw new Error(`Preset ${i + 1} has no valid gadgets list.`);
+      let from = null;
+      if (p.player !== undefined || p.preset !== undefined) {
+        if (!(p.player >= 1 && p.player <= 4) || !/^[A-Z]$/.test(p.preset || ""))
+          throw new Error(`Preset ${i + 1} has a bad origin: a player is 1 to 4 and a preset a letter.`);
+        from = { player: p.player, index: p.preset.charCodeAt(0) - 65 };
+      }
+      return { name: typeof p.name === "string" ? p.name : null, from, plate: { gadgets: p.gadgets.slice(), super: p.super || null } };
     });
   }
 
@@ -243,6 +260,7 @@
   function fromSaveDto(dto) {
     return {
       version: dto.version,
+      names: new Map(Object.entries(dto.names || {})),
       players: dto.players.map((p) => ({
         number: p.number,
         level: p.level || levelName(p.rows, p.superSlot),
@@ -263,8 +281,8 @@
   }
 
   window.GT = {
-    arrange, slotCount, levelName, validate, describe, paste, withPlate, samePlate, clonePlate,
-    encodeShareCode, decodeShareCode, exportJson, importJson, makeCatalog, fromSaveDto, toSaveRequest,
+    arrange, slotCount, capacity, used, levelName, validate, describe, paste, withPlate, samePlate, clonePlate,
+    encodeShareCode, decodeShareCode, FILE_EXTENSION, exportJson, importJson, makeCatalog, fromSaveDto, toSaveRequest,
     presetLetter: (i) => String.fromCharCode(65 + i),
   };
 })();

@@ -8,14 +8,17 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">GadgetTool <span class="tag">mockup</span></div>
+    <div class="brand">GadgetTool <span class="tag"></span></div>
     <div class="saveinfo" id="saveInfo"></div>
     <button class="chip" id="gameState"></button>
     <div class="spacer"></div>
+    <div class="seg" id="viewSwitch" role="group" aria-label="View">
+      <button data-view="list" title="Scrolling lists of presets and gadgets">Lists</button>
+      <button data-view="game" title="A layout close to the game's gadget menu">Game style</button>
+    </div>
     <button id="openBtn" title="Open a save (Ctrl+O)">Open…</button>
     <button id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
     <button id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
-    <button id="importBtn" title="Import a share code or a JSON file">Import…</button>
     <button id="saveBtn" class="primary" title="Save (Ctrl+S)">Save</button>
   </header>
 
@@ -35,31 +38,35 @@
 
   <nav class="players" id="players" aria-label="Local players" hidden></nav>
 
+  <!-- The editor's head, plate and issues are shared by both views: they move between them. -->
   <main class="layout" id="editorLayout" hidden>
     <aside class="presets" aria-label="Presets">
       <div class="panel-title">Presets</div>
       <div id="presets"></div>
     </aside>
 
-    <section class="editor">
-      <div class="editor-head">
-        <div>
+    <section class="editor" id="listEditor">
+      <div class="editor-head" id="editorHead">
+        <div class="title-block">
           <h1 id="presetTitle"></h1>
+          <input id="presetName" class="name-input" maxlength="40" autocomplete="off" spellcheck="false"
+            placeholder="Name this preset…" title="A name for this preset, kept in GadgetTool only (the game has no preset names)">
           <div class="sub" id="presetSub"></div>
         </div>
         <div class="actions">
           <button id="copyBtn" title="Copy this preset (Ctrl+C)">Copy</button>
           <button id="pasteHereBtn" title="Paste the copied preset here (Ctrl+V)">Paste here</button>
           <button id="pasteToBtn" title="Paste this preset on other presets or players">Paste to…</button>
-          <button id="shareBtn" title="Share code and JSON export">Share…</button>
+          <button id="shareBtn" title="Share code, or save to a .gtpresets file">Share…</button>
+          <button id="importBtn" title="Import a share code or a .gtpresets file onto this preset">Import…</button>
           <button id="clearBtn" class="danger" title="Remove every gadget from this preset">Clear</button>
         </div>
       </div>
       <div class="plate" id="plate"></div>
       <ul class="issues" id="issues"></ul>
-      <p class="hint">Click a gadget in the list to add it, or drag it onto the plate. Drag a 1-slot gadget onto the
-        Super Slot. Click × or drag a gadget back to the list to remove it. Gadgets are arranged in the rows
-        automatically.</p>
+      <p class="hint" id="listHint">Click a gadget in the list to add it, or drag it onto the plate. Drag a 1-slot
+        gadget onto the Super Slot. Click × or drag a gadget back to the list to remove it. Gadgets are arranged in
+        the rows automatically.</p>
     </section>
 
     <aside class="library" id="library" aria-label="Gadgets">
@@ -77,6 +84,21 @@
       </div>
       <div class="lib-list" id="libList"></div>
     </aside>
+  </main>
+
+  <!-- Game style: preset tabs over the plate, a description box, gadgets in rows by category. -->
+  <main class="game" id="gameLayout" hidden>
+    <section class="g-left">
+      <div id="gameHeadSlot"></div>
+      <div class="g-tabs" id="gameTabs"></div>
+      <div id="gamePlateSlot"></div>
+      <div class="g-info" id="gameInfo"></div>
+      <div id="gameIssuesSlot"></div>
+    </section>
+    <section class="g-right" aria-label="Gadgets">
+      <div class="g-search"><input id="gameSearch" type="search" placeholder="Search gadgets" autocomplete="off"></div>
+      <div class="g-panel" id="gameGadgets"></div>
+    </section>
   </main>
 
   <dialog id="pasteDialog">
@@ -99,8 +121,10 @@
       <label class="field">Share code
         <span class="code-row"><input id="shareCode" readonly><button type="button" id="copyCodeBtn">Copy</button></span>
       </label>
-      <p class="muted">Anyone with GadgetTool can paste this code. It holds the gadgets only, not the player.</p>
-      <h3>Export to a file</h3>
+      <p class="muted">Anyone with GadgetTool can paste this code. It holds the gadgets only, not the player or the name.</p>
+      <h3>Save to a file</h3>
+      <p class="muted">A <b>.gtpresets</b> file keeps the gadgets and the names: keep it on the PC, or send it to
+        someone who uses GadgetTool.</p>
       <div class="export-buttons">
         <button type="button" data-export="preset">This preset</button>
         <button type="button" data-export="player">All presets of this player</button>
@@ -112,15 +136,16 @@
 
   <dialog id="importDialog">
     <form method="dialog" class="dialog">
-      <h2>Import</h2>
-      <label class="field">Paste a share code (GT1-…) or the content of an export file
-        <textarea id="importText" rows="3" spellcheck="false"></textarea>
+      <h2>Import onto <span id="importTarget"></span></h2>
+      <label class="field">Paste a share code (GT1-…), or open a .gtpresets file
+        <textarea id="importText" rows="2" spellcheck="false"></textarea>
       </label>
       <div class="import-buttons">
         <button type="button" id="importReadBtn" class="primary">Read</button>
         <button type="button" id="importFileBtn">Open a file…</button>
       </div>
       <p class="error" id="importError"></p>
+      <div id="importAll"></div>
       <div id="importList"></div>
       <div class="dialog-buttons"><button value="close">Close</button></div>
     </form>

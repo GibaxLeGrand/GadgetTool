@@ -28,6 +28,7 @@
       openSample: () => call("openSample"),
       reloadSave: () => call("reloadSave"),
       save: (players) => call("save", { players }),
+      renamePreset: (player, index, name) => call("renamePreset", { player, index, name }),
       gameRunning: () => call("gameRunning"),
       exportFile: (suggestedName, content) => call("exportFile", { suggestedName, content }),
       importFile: () => call("importFile"),
@@ -39,6 +40,7 @@
     let running = false;
     let lastText = null;
     let lastName = null;
+    const names = new Map(); // fileName -> Map("player:index" -> name), for this page's life only
 
     const fail = (kind, message) => Object.assign(new Error(message), { kind });
 
@@ -68,6 +70,7 @@
       return {
         fileName,
         version: doc.version,
+        names: Object.fromEntries(names.get(fileName) || []),
         players: doc.players.map((p) => ({
           number: p.player,
           level: GT.levelName(p.rows, !!p.superSlot),
@@ -87,14 +90,17 @@
         catch { this.local = null; return fetchJson("../data/dev/catalog.json"); }
       },
       async openSample() {
-        if (this.local) return GTSample.make(this.local);
+        if (this.local) {
+          lastName = "generated sample";
+          return { ...GTSample.make(this.local), names: Object.fromEntries(names.get(lastName) || []) };
+        }
         const doc = await fetchJson("../data/dev/save.json");
         lastText = JSON.stringify(doc);
         lastName = "save.json (sample)";
         return parseDevSave(lastText, lastName);
       },
       async openSave() {
-        const file = await pickFile(".json,application/json");
+        const file = await pickFile(".json,.sav");
         if (file.cancelled) return file;
         lastText = file.content;
         lastName = file.fileName;
@@ -108,6 +114,13 @@
         if (running) throw fail("gameRunning", "Close the game before saving: it would overwrite the changes, and Steam Cloud could sync a half-written save.");
         return { saved: players.length, backup: "(browser preview: nothing was written)" };
       },
+      async renamePreset(player, index, name) {
+        const clean = (name || "").replace(/\s+/g, " ").trim().slice(0, 40) || null;
+        if (!names.has(lastName)) names.set(lastName, new Map());
+        if (clean) names.get(lastName).set(`${player}:${index}`, clean);
+        else names.get(lastName).delete(`${player}:${index}`);
+        return { name: clean };
+      },
       async gameRunning() { return { running }; },
       toggleGame() { running = !running; return running; },
       async exportFile(name, content) {
@@ -119,7 +132,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         return { fileName: name };
       },
-      importFile: () => pickFile(".json,application/json"),
+      importFile: () => pickFile(".gtpresets,.json"),
     };
   }
 

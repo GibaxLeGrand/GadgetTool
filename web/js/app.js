@@ -37,8 +37,10 @@
     redo: [],
     player: 1,
     preset: 0,
-    clipboard: null, // { plate, label }
+    clipboard: null, // { plate, label, name }
     gameRunning: false,
+    names: new Map(), // "player:index" -> name; GadgetTool only, not part of undo
+    view: loadView(),
     filter: { text: "", category: "", cost: 0, showLocked: true },
   };
 
@@ -46,7 +48,17 @@
   const savedPlayer = (n) => state.saved.players.find((p) => p.number === n);
   const plate = () => player().plates[state.preset];
   const label = (n, i) => `P${n} ${GT.presetLetter(i)}`;
+  const presetName = (n, i) => state.names.get(`${n}:${i}`) || null;
+  /** "P1 A" or "P1 A “Time trial”". */
+  const fullLabel = (n, i) => presetName(n, i) ? `${label(n, i)} “${presetName(n, i)}”` : label(n, i);
   const gadget = (id) => catalog.byId.get(id);
+
+  function loadView() {
+    try { return localStorage.getItem("gadgettool.view") === "game" ? "game" : "list"; } catch { return "list"; }
+  }
+  function saveView() {
+    try { localStorage.setItem("gadgettool.view", state.view); } catch { /* per-viewer comfort only */ }
+  }
 
   function changedPlates() {
     const out = [];
@@ -100,15 +112,38 @@
 
   function render() {
     const open = !!state.current;
+    const game = state.view === "game";
     $("#welcome").hidden = open;
     $("#players").hidden = !open;
-    $("#editorLayout").hidden = !open;
+    $("#editorLayout").hidden = !open || game;
+    $("#gameLayout").hidden = !open || !game;
+    placeSharedParts();
     renderTop();
     if (!open) return;
     renderPlayers();
-    renderPresets();
     renderEditor();
-    renderLibrary();
+    if (game) {
+      renderGameTabs();
+      renderGameGadgets();
+      showInfo(null);
+    } else {
+      renderPresets();
+      renderLibrary();
+    }
+  }
+
+  /** The editor's head, plate and issues belong to whichever view is shown. */
+  function placeSharedParts() {
+    const head = $("#editorHead"), plateEl = $("#plate"), issues = $("#issues");
+    if (state.view === "game") {
+      if (head.parentElement.id !== "gameHeadSlot") {
+        $("#gameHeadSlot").append(head);
+        $("#gamePlateSlot").append(plateEl);
+        $("#gameIssuesSlot").append(issues);
+      }
+    } else if (head.parentElement.id !== "listEditor") {
+      $("#listEditor").prepend(head, plateEl, issues);
+    }
   }
 
   function renderTop() {
@@ -119,7 +154,8 @@
       : `${state.fileName} · ${catalog.source}` + (n ? ` · ${n} unsaved preset${n > 1 ? "s" : ""}` : " · no unsaved change");
     $("#undoBtn").disabled = state.undo.length === 0;
     $("#redoBtn").disabled = state.redo.length === 0;
-    $("#importBtn").disabled = !open;
+    for (const b of $("#viewSwitch").children) b.classList.toggle("on", b.dataset.view === state.view);
+    $("#viewSwitch").hidden = !open;
     $("#saveBtn").disabled = n === 0;
     $("#saveBtn").textContent = n ? `Save (${n})` : "Save";
     $(".brand .tag").textContent = host.kind === "app" ? "early version" : "browser preview";
@@ -163,7 +199,7 @@
     const p = player();
     $("#presets").replaceChildren(...p.plates.map((pl, i) => {
       const issues = GT.validate(pl, p, catalog);
-      const used = pl.gadgets.reduce((a, id) => a + (gadget(id)?.slotCost ?? 0), 0);
+      const name = presetName(p.number, i);
       const el = h("button", {
         class: "preset" + (i === state.preset ? " active" : ""),
         draggable: "true",
@@ -182,8 +218,9 @@
       },
       h("span", { class: "letter" }, GT.presetLetter(i)),
       miniPlate(p, pl),
+      h("span", { class: "pname" + (name ? "" : " none") }, name || "No name"),
       h("span", { class: "meta" },
-        pl.gadgets.length === 0 && !pl.super ? "Empty" : `${used}/${GT.slotCount(p)} slots${pl.super ? " · ★" : ""}`,
+        pl.gadgets.length === 0 && !pl.super ? "Empty" : `${GT.used(pl, catalog)}/${GT.capacity(p)} slots`,
         issues.length > 0 && h("span", { class: "warn", title: issues.map((x) => GT.describe(x, catalog)).join("\n") }, "!"),
         isChanged(p.number, i) && h("span", { class: "dot", title: "Unsaved changes" })));
       return el;
@@ -197,6 +234,8 @@
       title: tip(g),
       draggable: "true",
       ondragstart: (e) => { e.dataTransfer.setData("text/gt-placed", g.id); e.dataTransfer.effectAllowed = "move"; },
+      onmouseenter: () => showInfo(g),
+      onmouseleave: () => showInfo(null),
     },
     h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name)),
     h("button", { type: "button", class: "x", title: "Remove", onclick: (e) => { e.stopPropagation(); removeGadget(g.id); } }, "×"));
@@ -217,11 +256,13 @@
     const known = pl.gadgets.filter((id) => gadget(id));
     const unknown = pl.gadgets.filter((id) => !gadget(id));
     const costs = known.map((id) => gadget(id).slotCost);
-    const used = costs.reduce((a, b) => a + b, 0);
     const rowsOf = GT.arrange(costs, p.rows);
 
     $("#presetTitle").textContent = `Player ${p.number} · Preset ${GT.presetLetter(state.preset)}`;
-    $("#presetSub").textContent = `${p.level} plate · ${GT.slotCount(p)} slots${p.superSlot ? " + Super Slot" : ""} · ${used} used`;
+    const nameInput = $("#presetName");
+    if (document.activeElement !== nameInput) nameInput.value = presetName(p.number, state.preset) || "";
+    $("#presetSub").textContent = `${p.level} plate · ${GT.used(pl, catalog)}/${GT.capacity(p)} slots used` +
+      (p.superSlot ? ` (${GT.slotCount(p)} + Super Slot)` : "");
 
     let gridContent;
     if (rowsOf) {
@@ -329,6 +370,114 @@
     if (shown.length === 0) list.push(h("p", { class: "muted", style: "padding: 12px" }, "No gadget matches."));
     $("#libList").replaceChildren(...list);
     $("#libCount").textContent = `${p.unlocked.size}/${catalog.gadgets.length} unlocked`;
+  }
+
+  // ---- Game-style view ---------------------------------------------------------------
+
+  function renderGameTabs() {
+    const p = player();
+    const n = p.plates.length;
+    const go = (d) => { state.preset = (state.preset + d + n) % n; render(); };
+    $("#gameTabs").replaceChildren(
+      h("button", { type: "button", class: "g-arrow", title: "Previous preset (Page Up)", onclick: () => go(-1) }, "◀"),
+      ...p.plates.map((pl, i) => {
+        const broken = GT.validate(pl, p, catalog).length > 0;
+        return h("button", {
+          type: "button",
+          class: "g-tab" + (i === state.preset ? " on" : ""),
+          title: `${fullLabel(p.number, i)} · ${pl.gadgets.length || pl.super ? `${GT.used(pl, catalog)}/${GT.capacity(p)} slots` : "Empty"}`,
+          onclick: () => { state.preset = i; render(); },
+        }, GT.presetLetter(i),
+        broken ? h("span", { class: "g-warn" }, "!") : isChanged(p.number, i) ? h("span", { class: "g-dot" }) : null);
+      }),
+      h("button", { type: "button", class: "g-arrow", title: "Next preset (Page Down)", onclick: () => go(1) }, "▶"));
+  }
+
+  function renderGameGadgets() {
+    const p = player();
+    const pl = plate();
+    const text = state.filter.text.trim().toLowerCase();
+    const groups = new Map();
+    for (const g of catalog.gadgets) {
+      if (text && !g.name.toLowerCase().includes(text) && !(g.description || "").toLowerCase().includes(text)) continue;
+      const category = g.category || "Other";
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(g);
+    }
+    const rows = [...groups].map(([category, gadgets]) => h("div", { class: "g-cat", style: `--h:${hue(category)}` },
+      h("div", { class: "g-cat-name" }, category),
+      h("div", { class: "g-row" }, gadgets.map((g) => gameTile(g, p, pl)))));
+    $("#gameGadgets").replaceChildren(...(rows.length ? rows : [h("p", { class: "g-none" }, "No gadget matches.")]));
+  }
+
+  function gameTile(g, p, pl) {
+    const locked = !p.unlocked.has(g.id);
+    const inSuper = pl.super === g.id;
+    const equipped = inSuper || pl.gadgets.includes(g.id);
+    return h("button", {
+      type: "button",
+      class: "g-tile" + (locked ? " locked" : "") + (equipped ? " equipped" : ""),
+      title: locked ? `${tip(g)}\n\nNot unlocked for player ${p.number}.` : tip(g),
+      "aria-disabled": locked ? "true" : null,
+      draggable: locked ? null : "true",
+      ondragstart: (e) => { e.dataTransfer.setData("text/gt-gadget", g.id); e.dataTransfer.effectAllowed = "copy"; },
+      onmouseenter: () => showInfo(g),
+      onmouseleave: () => showInfo(null),
+      onclick: () => {
+        if (locked) toast(`${g.name} is not unlocked for player ${p.number}.`, "bad");
+        else if (equipped) removeGadget(g.id);
+        else addGadget(g.id);
+      },
+      oncontextmenu: (e) => {
+        e.preventDefault();
+        if (!locked && !inSuper) setSuper(g.id);
+      },
+    },
+    h("span", { class: "g-cost", title: `${g.slotCost} slot${g.slotCost > 1 ? "s" : ""}` }, g.slotCost),
+    equipped ? h("span", { class: "g-check", title: inSuper ? "In the Super Slot" : "Equipped" }, inSuper ? "★" : "✓") : null,
+    h("span", { class: "hex s1 g-hex" }, icon(g)),
+    h("span", { class: "g-name" }, g.name));
+  }
+
+  /** The description box under the plate (game-style view): the gadget pointed at, or the preset. */
+  function showInfo(g) {
+    if (state.view !== "game" || !state.current) return;
+    const p = player();
+    const pl = plate();
+    $("#gameInfo").replaceChildren(...(g
+      ? [icon(g), h("div", {},
+          h("div", { class: "g-info-name" }, `${g.name} · ${g.slotCost} slot${g.slotCost > 1 ? "s" : ""}`),
+          h("div", { class: "g-info-text" }, g.description || g.category))]
+      : [h("div", {},
+          h("div", { class: "g-info-name" }, `${fullLabel(p.number, state.preset)} · ${GT.used(pl, catalog)}/${GT.capacity(p)} slots used`),
+          h("div", { class: "g-info-text" }, "Click a gadget to add or remove it. Right-click a 1-slot gadget to put it in the Super Slot."))]));
+  }
+
+  // ---- Names (GadgetTool only) -------------------------------------------------------
+
+  function setName(n, i, name) {
+    if (name) state.names.set(`${n}:${i}`, name);
+    else state.names.delete(`${n}:${i}`);
+    render();
+  }
+
+  async function nameCurrentPreset(value) {
+    const n = state.player, i = state.preset;
+    if ((value || "").trim() === (presetName(n, i) || "")) return;
+    try {
+      setName(n, i, (await host.renamePreset(n, i, value)).name);
+    } catch (e) {
+      toast(e.message, "bad");
+    }
+  }
+
+  async function applyName(target, name) {
+    if (!name) return;
+    try {
+      setName(target.player, target.index, (await host.renamePreset(target.player, target.index, name)).name);
+    } catch (e) {
+      toast(e.message, "bad");
+    }
   }
 
   // ---- Editing -----------------------------------------------------------------------
@@ -447,6 +596,7 @@
     state.fileName = dto.fileName;
     state.saved = save;
     state.current = save;
+    state.names = save.names;
     state.undo = [];
     state.redo = [];
     state.player = save.players[0]?.number ?? 1;
@@ -468,11 +618,13 @@
 
   // ---- Paste dialog ------------------------------------------------------------------
 
-  const paste = { plate: null, what: "", selected: new Set() };
+  const paste = { plate: null, what: "", name: null, selected: new Set() };
 
-  function openPasteDialog(pl, what, preselect = []) {
+  /** name: a preset name to give the targets once pasted (imports only). */
+  function openPasteDialog(pl, what, preselect = [], name = null) {
     paste.plate = GT.clonePlate(pl);
     paste.what = what;
+    paste.name = name;
     paste.selected = new Set(preselect.map((t) => t.player + ":" + t.index));
     $("#pasteDrop").checked = false;
     $("#pasteDialog").returnValue = "";
@@ -577,7 +729,7 @@
   // ---- Share and import --------------------------------------------------------------
 
   function openShareDialog() {
-    $("#shareWhat").textContent = label(state.player, state.preset);
+    $("#shareWhat").textContent = fullLabel(state.player, state.preset);
     $("#shareCode").value = GT.encodeShareCode(plate());
     $("#shareDialog").showModal();
   }
@@ -587,9 +739,13 @@
     const players = scope === "all" ? state.current.players : [player()];
     for (const p of players) p.plates.forEach((pl, i) => {
       if (scope === "preset" && i !== state.preset) return;
-      entries.push({ label: label(p.number, i), plate: pl });
+      entries.push({ name: presetName(p.number, i), from: { player: p.number, index: i }, plate: pl });
     });
-    const name = scope === "all" ? "gadgettool-all.json" : scope === "player" ? `gadgettool-p${state.player}.json` : `gadgettool-${label(state.player, state.preset).replace(" ", "")}.json`;
+    const own = presetName(state.player, state.preset);
+    const base = scope === "all" ? "All presets"
+      : scope === "player" ? `P${state.player} presets`
+      : `${label(state.player, state.preset)}${own ? " - " + own : ""}`;
+    const name = base.replace(/[\\/:*?"<>|]/g, "").trim() + GT.FILE_EXTENSION;
     try {
       const r = await host.exportFile(name, GT.exportJson(entries));
       if (!r.cancelled) toast(`Exported ${entries.length} preset${entries.length > 1 ? "s" : ""} to ${r.fileName}.`);
@@ -602,26 +758,88 @@
     try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
   }
 
+  // Import: onto the selected preset first; a whole file can also go back where it came from.
+
+  function openImportDialog() {
+    $("#importTarget").textContent = fullLabel(state.player, state.preset);
+    $("#importText").value = "";
+    $("#importError").textContent = "";
+    $("#importAll").replaceChildren();
+    $("#importList").replaceChildren();
+    $("#importDialog").showModal();
+    $("#importText").focus();
+  }
+
+  const describePlate = (pl) =>
+    [...pl.gadgets.map((id) => gadget(id)?.name ?? `Unknown (${id})`), ...(pl.super ? ["★ " + (gadget(pl.super)?.name ?? pl.super)] : [])].join(" · ") || "Empty";
+
   function readImport(text) {
     $("#importError").textContent = "";
+    $("#importAll").replaceChildren();
     $("#importList").replaceChildren();
     const trimmed = text.trim();
     if (!trimmed) return;
     let entries;
     try {
       entries = /^gt\d-/i.test(trimmed)
-        ? [{ label: "Share code", plate: GT.decodeShareCode(trimmed, catalog) }]
+        ? [{ name: null, from: null, plate: GT.decodeShareCode(trimmed, catalog), code: true }]
         : GT.importJson(trimmed);
     } catch (e) {
       $("#importError").textContent = e.message;
       return;
     }
+
+    const here = { player: state.player, index: state.preset };
+    const exists = (t) => state.current.players.some((p) => p.number === t.player && t.index < p.plates.length);
+    const placed = entries.filter((e) => e.from && exists(e.from));
+    if (placed.length > 1) {
+      $("#importAll").replaceChildren(h("button", {
+        type: "button", class: "primary wide",
+        onclick: () => { $("#importDialog").close(); putBack(placed); },
+      }, `Put the ${placed.length} presets back where they came from`));
+    }
+
     $("#importList").replaceChildren(...entries.map((e, n) => h("div", { class: "import-entry" },
       h("div", { class: "what" },
-        h("div", {}, e.label || `Preset ${n + 1}`),
-        h("div", { class: "names" }, [...e.plate.gadgets, ...(e.plate.super ? ["★ " + e.plate.super] : [])].map((id) => id.startsWith("★ ") ? "★ " + (gadget(id.slice(2))?.name ?? id.slice(2)) : gadget(id)?.name ?? `Unknown (${id})`).join(" · ") || "Empty")),
-      h("button", { type: "button", onclick: () => { $("#importDialog").close(); pasteOrAsk(e.plate, e.label || "imported preset", [{ player: state.player, index: state.preset }]); } }, `Put on ${label(state.player, state.preset)}`),
-      h("button", { type: "button", onclick: () => { $("#importDialog").close(); openPasteDialog(e.plate, e.label || "imported preset"); } }, "Paste to…"))));
+        h("div", {}, e.name ? `“${e.name}”` : e.code ? "Share code" : `Preset ${n + 1}`,
+          e.from ? h("span", { class: "muted" }, ` · from ${label(e.from.player, e.from.index)}`) : null),
+        h("div", { class: "names" }, describePlate(e.plate))),
+      h("button", { type: "button", class: entries.length === 1 ? "primary" : null, onclick: () => { $("#importDialog").close(); putImported(e, [here]); } },
+        `Put on ${label(here.player, here.index)}`),
+      h("button", { type: "button", onclick: () => { $("#importDialog").close(); openPasteDialog(e.plate, e.name ? `“${e.name}”` : "the imported preset", [], e.name); } },
+        "Paste to…"))));
+  }
+
+  function putImported(entry, targets) {
+    const what = entry.name ? `“${entry.name}”` : "the imported preset";
+    const result = GT.paste(state.current, entry.plate, targets, catalog, "strict");
+    if (!result.applied) {
+      openPasteDialog(entry.plate, what, targets, entry.name);
+      return;
+    }
+    commit(result.save, `Imported ${what} onto ${targets.map((t) => label(t.player, t.index)).join(", ")}.`);
+    for (const t of targets) applyName(t, entry.name);
+  }
+
+  function putBack(entries) {
+    const run = (mode) => {
+      let save = state.current;
+      const refused = [];
+      for (const e of entries) {
+        const r = GT.paste(save, e.plate, [e.from], catalog, mode);
+        if (r.applied) save = r.save;
+        else refused.push(`${label(e.from.player, e.from.index)}: ${GT.describe(r.targets[0].issues[0], catalog)}`);
+      }
+      return { save, refused };
+    };
+    let r = run("strict");
+    if (r.refused.length) {
+      if (!confirm(`${r.refused.length} preset${r.refused.length > 1 ? "s" : ""} refuse:\n${r.refused.join("\n")}\n\nPut them back anyway, leaving out the gadgets each player cannot use?`)) return;
+      r = run("dropMissing");
+      if (r.refused.length) { toast(`Nothing imported: ${r.refused.join("; ")}`, "bad"); return; }
+    }
+    commit(r.save, `Imported ${entries.length} presets back where they came from.`);
+    for (const e of entries) applyName(e.from, e.name);
   }
 
   // ---- Wiring ------------------------------------------------------------------------
@@ -633,7 +851,7 @@
   function wire() {
     const cat = $("#category");
     cat.onchange = () => { state.filter.category = cat.value; renderLibrary(); };
-    $("#search").oninput = (e) => { state.filter.text = e.target.value; renderLibrary(); };
+    $("#search").oninput = (e) => { state.filter.text = e.target.value; $("#gameSearch").value = e.target.value; renderLibrary(); };
     $("#showLocked").onchange = (e) => { state.filter.showLocked = e.target.checked; renderLibrary(); };
     $("#costFilter").onclick = (e) => {
       const b = e.target.closest("button");
@@ -655,13 +873,38 @@
     $("#pasteToBtn").onclick = () => openPasteDialog(plate(), label(state.player, state.preset));
     $("#shareBtn").onclick = openShareDialog;
     $("#clearBtn").onclick = () => setPlate({ gadgets: [], super: null }, `Cleared ${label(state.player, state.preset)}.`);
-    $("#importBtn").onclick = () => { $("#importError").textContent = ""; $("#importList").replaceChildren(); $("#importDialog").showModal(); $("#importText").focus(); };
+    $("#importBtn").onclick = openImportDialog;
+    $("#importText").addEventListener("input", (e) => {
+      if (/^\s*gt\d-[A-Za-z0-9_-]{8,}\s*$/i.test(e.target.value)) readImport(e.target.value);
+    });
+
+    $("#viewSwitch").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.dataset.view === state.view) return;
+      state.view = b.dataset.view;
+      saveView();
+      render();
+    };
+
+    const nameInput = $("#presetName");
+    nameInput.addEventListener("change", () => nameCurrentPreset(nameInput.value));
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") nameInput.blur();
+      else if (e.key === "Escape") { nameInput.value = presetName(state.player, state.preset) || ""; nameInput.blur(); }
+    });
+
+    $("#gameSearch").oninput = (e) => { state.filter.text = e.target.value; $("#search").value = e.target.value; renderGameGadgets(); };
+    const gamePanel = $("#gameGadgets");
+    gamePanel.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/gt-placed")) { e.preventDefault(); gamePanel.classList.add("over"); } });
+    gamePanel.addEventListener("dragleave", (e) => { if (!gamePanel.contains(e.relatedTarget)) gamePanel.classList.remove("over"); });
+    gamePanel.addEventListener("drop", (e) => { gamePanel.classList.remove("over"); const id = e.dataTransfer.getData("text/gt-placed"); if (id) { e.preventDefault(); removeGadget(id); } });
 
     $("#pasteDrop").onchange = renderPasteGrid;
     $("#pasteDialog").addEventListener("close", () => {
       if ($("#pasteDialog").returnValue !== "paste" || !paste.result?.applied) return;
       const n = paste.result.targets.length;
       commit(paste.result.save, `Pasted ${paste.what} on ${n} preset${n > 1 ? "s" : ""}.`);
+      if (paste.name) for (const o of paste.result.targets) applyName(o.target, paste.name);
     });
 
     $("#copyCodeBtn").onclick = async () => toast(await copyText($("#shareCode").value) ? "Code copied." : "Select the code and copy it.", "ok");
@@ -713,10 +956,11 @@
       else if (mod && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
       else if (mod && e.key.toLowerCase() === "c" && !String(window.getSelection())) { copyPreset(); }
       else if (mod && e.key.toLowerCase() === "v" && state.clipboard) { e.preventDefault(); $("#pasteHereBtn").click(); }
-      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      else if (["ArrowDown", "ArrowUp", "PageDown", "PageUp"].includes(e.key)) {
         e.preventDefault();
         const n = player().plates.length;
-        state.preset = (state.preset + (e.key === "ArrowDown" ? 1 : n - 1)) % n;
+        const next = e.key === "ArrowDown" || e.key === "PageDown";
+        state.preset = (state.preset + (next ? 1 : n - 1)) % n;
         render();
       }
     });

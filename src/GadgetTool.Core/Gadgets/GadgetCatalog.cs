@@ -11,10 +11,12 @@ public sealed class GadgetCatalog
 
     /// <param name="gadgets">Every gadget, in display order.</param>
     /// <param name="source">Where the list comes from, for display ("made-up gadgets", the game's files...).</param>
-    public GadgetCatalog(IEnumerable<GadgetDefinition> gadgets, string source = "")
+    /// <param name="gameVersion">The game version the list describes; shares record it.</param>
+    public GadgetCatalog(IEnumerable<GadgetDefinition> gadgets, string source = "", GameVersion gameVersion = default)
     {
         ArgumentNullException.ThrowIfNull(gadgets);
         Source = source ?? "";
+        GameVersion = gameVersion;
 
         var all = gadgets.ToList();
         _byId = new Dictionary<string, GadgetDefinition>(StringComparer.Ordinal);
@@ -42,6 +44,8 @@ public sealed class GadgetCatalog
     public IReadOnlyList<GadgetDefinition> Gadgets { get; }
 
     public string Source { get; }
+
+    public GameVersion GameVersion { get; }
 
     public bool TryGet(string id, out GadgetDefinition gadget) => _byId.TryGetValue(id, out gadget!);
 

@@ -27,6 +27,7 @@ public interface IHostUi
 /// <param name="SampleSavePath">A made-up save to try the tool with, or null.</param>
 /// <param name="SampleCopyPath">Where the sample is copied before it is opened, so the original stays clean.</param>
 /// <param name="Names">The presets' names (GadgetTool only, never in the save).</param>
+/// <param name="Seen">The game each save was last seen with, to report what an update changed.</param>
 public sealed record AppBridgeOptions(
     GadgetCatalog Catalog,
     ISaveFormat Format,
@@ -36,7 +37,8 @@ public sealed record AppBridgeOptions(
     string BackupDirectory,
     string? SampleSavePath,
     string SampleCopyPath,
-    PresetNameStore Names);
+    PresetNameStore Names,
+    SeenGameStore Seen);
 
 /// <summary>
 /// Answers the web page's calls. The page posts <c>{ "id", "method", "params" }</c>; the answer
@@ -70,6 +72,7 @@ public sealed class AppBridge(AppBridgeOptions options)
                 "reloadSave" => OpenSave(_session?.Path ?? throw new BridgeError("noSave", "No save is open.")),
                 "save" => Save(args),
                 "renamePreset" => RenamePreset(args),
+                "acknowledgeGameUpdate" => AcknowledgeGameUpdate(),
                 "gameRunning" => new JsonObject { ["running"] = options.Game.IsGameRunning() },
                 "exportFile" => ExportFile(args),
                 "importFile" => ImportFile(),
@@ -90,6 +93,7 @@ public sealed class AppBridge(AppBridgeOptions options)
     private JsonObject Catalog() => new()
     {
         ["source"] = options.Catalog.Source,
+        ["gameVersion"] = options.Catalog.GameVersion.IsKnown ? options.Catalog.GameVersion.ToString() : null,
         ["gadgets"] = new JsonArray([.. options.Catalog.Gadgets.Select(g => (JsonNode)new JsonObject
         {
             ["id"] = g.Id,
@@ -107,8 +111,38 @@ public sealed class AppBridge(AppBridgeOptions options)
             return Cancelled();
 
         _session = SaveSession.Open(path, options.Format, options.Catalog);
-        return SaveDto(_session);
+
+        // A save seen before, with gadgets that an update changed: report it, and keep the old
+        // game on record until the user has seen the report. Otherwise record today's game.
+        var update = options.Seen.Check(path, _session.Current, options.Catalog);
+        if (update is null)
+            options.Seen.Remember(path, options.Catalog);
+
+        var dto = SaveDto(_session);
+        dto["gameUpdate"] = update is null ? null : GameUpdateDto(update);
+        return dto;
     }
+
+    private JsonObject AcknowledgeGameUpdate()
+    {
+        var session = _session ?? throw new BridgeError("noSave", "No save is open.");
+        options.Seen.Remember(session.Path, options.Catalog);
+        return [];
+    }
+
+    private static JsonObject GameUpdateDto(GameUpdate update) => new()
+    {
+        ["from"] = update.From.ToString(),
+        ["to"] = update.To.ToString(),
+        ["changes"] = new JsonArray([.. update.Changes.Select(c => (JsonNode)new JsonObject
+        {
+            ["id"] = c.Id,
+            ["name"] = c.Name,
+            ["then"] = c.SlotCostThen,
+            ["now"] = c.SlotCostNow,
+        })]),
+        ["presets"] = new JsonArray([.. update.Presets.Select(p => (JsonNode)$"{p.Player}:{p.Index}")]),
+    };
 
     private JsonObject OpenSample()
     {

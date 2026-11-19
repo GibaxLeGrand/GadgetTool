@@ -2,6 +2,7 @@
   "format": "gadgettool.catalog",
   "version": 1,
   "source": "Made-up gadgets (development)",
+  "gameVersion": "0.1.0",
   "gadgets": [
     { "id": "dev.ring_magnet", "name": "Ring Magnet", "slotCost": 1, "category": "Rings", "description": "Pick up rings from further away." },
     { "id": "dev.ring_saver", "name": "Ring Saver", "slotCost": 1, "category": "Rings", "description": "Lose fewer rings when hit." },

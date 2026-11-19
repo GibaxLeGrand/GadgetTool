@@ -9,7 +9,7 @@ namespace GadgetTool.Core.Gadgets;
 /// </summary>
 /// <example>
 /// <code>
-/// { "format": "gadgettool.catalog", "version": 1, "source": "Made-up gadgets",
+/// { "format": "gadgettool.catalog", "version": 1, "source": "Made-up gadgets", "gameVersion": "2.0.0",
 ///   "gadgets": [ { "id": "dev.ring_magnet", "name": "Ring Magnet", "slotCost": 1,
 ///                  "category": "Rings", "description": "..." } ] }
 /// </code>
@@ -55,7 +55,7 @@ public static class CatalogJson
 
         try
         {
-            return new GadgetCatalog(gadgets, Text(root, "source") ?? "");
+            return new GadgetCatalog(gadgets, Text(root, "source") ?? "", GameVersion.Parse(Text(root, "gameVersion")));
         }
         catch (ArgumentException e)
         {

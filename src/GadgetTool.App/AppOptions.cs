@@ -16,6 +16,9 @@ internal sealed record AppOptions(string WebFolder, string CatalogPath, string? 
     /// <summary>The presets' names: GadgetTool only, never written into a save.</summary>
     public string NamesFile => Path.Combine(DataFolder, "preset-names.json");
 
+    /// <summary>The game each save was last seen with, to report what an update changed.</summary>
+    public string SeenGameFile => Path.Combine(DataFolder, "seen-game.json");
+
     public static AppOptions Parse(string[] args)
     {
         var baseDir = AppContext.BaseDirectory;

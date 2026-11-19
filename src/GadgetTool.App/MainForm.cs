@@ -37,7 +37,8 @@ internal sealed class MainForm : Form
             options.BackupFolder,
             options.SampleSavePath,
             options.SampleCopyPath,
-            new PresetNameStore(options.NamesFile)));
+            new PresetNameStore(options.NamesFile),
+            new SeenGameStore(options.SeenGameFile)));
 
         Text = "GadgetTool";
         BackColor = Background;

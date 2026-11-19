@@ -36,12 +36,15 @@ public sealed class AppBridgeTests : IDisposable
     {
         File.WriteAllText(SavePath, DevSaveJson);
         File.WriteAllText(_temp.File("sample.json"), DevSaveJson);
-        _bridge = new AppBridge(new AppBridgeOptions(
-            Catalog, new DevJsonSaveFormat(), _ui, new Probe(() => _gameRunning),
-            new FixedTime(new DateTimeOffset(2026, 11, 19, 16, 0, 0, TimeSpan.Zero)),
-            _temp.File("backups"), _temp.File("sample.json"), _temp.File("data/sample-copy.json"),
-            new PresetNameStore(_temp.File("data/names.json"))));
+        _bridge = BridgeWith(Catalog);
     }
+
+    private AppBridge BridgeWith(GadgetCatalog catalog) => new(new AppBridgeOptions(
+        catalog, new DevJsonSaveFormat(), _ui, new Probe(() => _gameRunning),
+        new FixedTime(new DateTimeOffset(2026, 11, 19, 16, 0, 0, TimeSpan.Zero)),
+        _temp.File("backups"), _temp.File("sample.json"), _temp.File("data/sample-copy.json"),
+        new PresetNameStore(_temp.File("data/names.json")),
+        new SeenGameStore(_temp.File("data/seen.json"))));
 
     private string SavePath => _temp.File("save.json");
 
@@ -208,6 +211,42 @@ public sealed class AppBridgeTests : IDisposable
         Open();
 
         Assert.Equal("badRequest", ErrorKind(Call("renamePreset", new JsonObject { ["player"] = 1, ["index"] = 10, ["name"] = "X" })));
+    }
+
+    [Fact]
+    public void After_a_game_update_the_presets_it_broke_are_reported_until_acknowledged()
+    {
+        Assert.Null(Open()["gameUpdate"]);
+
+        // The update: Two A now takes 3 slots. P1 preset A (Two A + One A, plus a Super Slot
+        // gadget) is touched; presets without Two A are not.
+        var updated = new GadgetCatalog(Catalog.Gadgets.Select(g => g.Id == TwoA ? g with { SlotCost = 3 } : g), gameVersion: new GameVersion(2, 1, 0));
+        var after = BridgeWith(updated);
+        JsonObject Reopen() => JsonNode.Parse(after.Handle(new JsonObject { ["id"] = 1, ["method"] = "openSave", ["params"] = new JsonObject { ["path"] = SavePath } }.ToJsonString()))!["result"]!.AsObject();
+
+        var update = Reopen()["gameUpdate"]!;
+        Assert.Equal("unknown", update["from"]!.GetValue<string>());
+        Assert.Equal("2.1.0", update["to"]!.GetValue<string>());
+        var change = Assert.Single(update["changes"]!.AsArray())!;
+        Assert.Equal(TwoA, change["id"]!.GetValue<string>());
+        Assert.Equal(2, change["then"]!.GetValue<int>());
+        Assert.Equal(3, change["now"]!.GetValue<int>());
+        Assert.Equal(["1:0"], update["presets"]!.AsArray().Select(p => p!.GetValue<string>()));
+
+        Assert.NotNull(Reopen()["gameUpdate"]);
+        after.Handle("""{ "id": 2, "method": "acknowledgeGameUpdate" }""");
+        Assert.Null(Reopen()["gameUpdate"]);
+    }
+
+    [Fact]
+    public void An_update_that_touches_no_gadget_in_use_is_not_reported()
+    {
+        Open();
+        var updated = new GadgetCatalog(Catalog.Gadgets.Select(g => g.Id == TwoC ? g with { SlotCost = 3 } : g), gameVersion: new GameVersion(2, 1, 0));
+
+        var reply = JsonNode.Parse(BridgeWith(updated).Handle(new JsonObject { ["id"] = 1, ["method"] = "openSave", ["params"] = new JsonObject { ["path"] = SavePath } }.ToJsonString()))!;
+
+        Assert.Null(reply["result"]!["gameUpdate"]);
     }
 
     [Fact]

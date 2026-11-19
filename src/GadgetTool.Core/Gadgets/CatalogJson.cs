@@ -63,12 +63,22 @@ public static class CatalogJson
                 Texts(g["name"], defaultLanguage, $"gadget '{id}' name"),
                 categoryId,
                 category,
-                Texts(g["description"], defaultLanguage, $"gadget '{id}' description")));
+                Texts(g["description"], defaultLanguage, $"gadget '{id}' description"),
+                Texts(g["superEffect"], defaultLanguage, $"gadget '{id}' Super effect")));
+        }
+
+        // Optional: the game's category colours ({ "id", "color" }), written by the extractor.
+        var colors = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var category in (root["categories"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            if (Text(category, "id") is { } categoryId && Text(category, "color") is { } color
+                && System.Text.RegularExpressions.Regex.IsMatch(color, "^#[0-9A-Fa-f]{6}$"))
+                colors[categoryId] = color;
         }
 
         try
         {
-            return new LocalizedCatalog(gadgets, Text(root, "source") ?? "", GameVersion.Parse(Text(root, "gameVersion")), defaultLanguage);
+            return new LocalizedCatalog(gadgets, Text(root, "source") ?? "", GameVersion.Parse(Text(root, "gameVersion")), defaultLanguage, colors);
         }
         catch (ArgumentException e)
         {

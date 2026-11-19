@@ -116,6 +116,8 @@ public sealed class AppBridge(AppBridgeOptions options)
                 ["category"] = g.Category,
                 ["categoryId"] = g.CategoryKey,
                 ["description"] = g.Description,
+                ["superEffect"] = g.SuperEffect,
+                ["categoryColor"] = g.CategoryColor,
                 ["icon"] = options.IconUrl?.Invoke(g.Id),
             })]),
         };

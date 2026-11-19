@@ -141,6 +141,24 @@ import.
     changed, a banner says what, and the presets it broke are kept as they are, marked red
     ("fix it before playing"). The old record stays until "Got it".
   - Share-code bytes changed for this (format byte still 1: nothing was released yet).
+- **Idea (Gibax, 2026-11-19): the app refreshes its gadget list from the game itself.** He
+  ships the exe with a 2.0.0 database; if the game moves to 2.1.0 (or someone adds or
+  changes gadgets) before GadgetTool is updated, an option rebuilds the list from the
+  player's install. Feasibility, as answered (nothing checked on game files yet):
+  - It is the same reader as the real catalog (CUE4Parse in the app, read-only, on the
+    player's own install, results cached in LocalAppData, never redistributed), run on
+    demand. Detect a game update cheaply with the Steam build id in
+    `steamapps/appmanifest_2486820.acf`, then offer the refresh.
+  - To check first with FModel on a machine with the game, in this order: (1) are the paks
+    encrypted (AES key)? (2) does reading need a mappings file (`.usmap`, usual for UE5
+    unversioned properties), and does it change with patches? (3) where the gadget data
+    lives (DataTable? one asset per gadget?) and which fields hold id, slot cost, category,
+    icon; (4) names from the localisation files (French included); (5) where the game
+    states its version.
+  - Limits: a new save format, or a renamed table or field, still needs a GadgetTool update
+    (the asset path and field names could live in a small config shipped with the
+    database); if the refresh fails, keep the last good list and say so. With mods
+    (`~mods` paks) the list would include modded gadgets: offer "with / without mods".
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

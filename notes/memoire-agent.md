@@ -171,6 +171,14 @@ import.
     ("Check for data updates", from the GitHub repository, hashes checked; never
     automatic). Open choice for Gibax: icons in the packs (SEGA art redistributed) or not
     (placeholders, or read locally when possible).
+  - Gibax's two paths (same day): **offline, exact**: the player gives the AES key and the
+    app reads the installed game itself; **online**: the app updates the software and/or
+    the data from GitHub. Agent's plan: one extraction library shared by the maintainer
+    CLI and the app's offline option; data chosen in this order: local extraction for the
+    installed build > downloaded pack for that version > pack in the release > newest older
+    pack with a warning. Online: data packs download into LocalAppData (easy); a new app
+    version is announced with a download (replacing a running exe needs a small updater:
+    later). Only the official repository over HTTPS, SHA-256 checked, opt-in.
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

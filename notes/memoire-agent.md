@@ -288,7 +288,7 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   match the paks' letter case (`..._run60` against `..._Run60`), so files are looked up
   ignoring case. Thumbnails (`ThumbnailTexture`, 256x256) are not exported.
 - Not done yet: `index.json`, the catalog reader for the extra fields (`superEffect`,
-  `categories`...), the icons in the app.
+  `categories`...). The icons are shown by the app (next section).
 
 ## The app on the real save (2026-11-19, branch `app/real-save`)
 

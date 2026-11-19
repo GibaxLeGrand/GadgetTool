@@ -42,6 +42,8 @@ import.
   `backups/` and `*.sav` are ignored.
 - Slot count is read from the save or game data, never hardcoded: guides disagree (6 slots,
   7 at Grand Master plate according to others).
+- The repository stays public, and the tool will be released publicly. Everything committed
+  must be fit to publish: no SEGA assets, no saves, nothing personal.
 - Stack proposed, not confirmed by Gibax yet: C# .NET 10 with a UI-free Core library, like
   padlobby and BluestarDeckExport.
 

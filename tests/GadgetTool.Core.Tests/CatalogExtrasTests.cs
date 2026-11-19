@@ -18,7 +18,8 @@ public sealed class CatalogExtrasTests : IDisposable
           "gadgets": [
             { "id": "t.ring", "slotCost": 1, "categoryId": "rings", "name": { "en": "Ring", "fr": "Anneau" }, "base": "mini",
               "superEffect": { "en": "Even more rings.", "fr": "Encore plus d'anneaux." } },
-            { "id": "t.odd", "slotCost": 2, "categoryId": "odd", "name": { "en": "Odd" }, "base": "round" }
+            { "id": "t.odd", "slotCost": 2, "categoryId": "odd", "name": { "en": "Odd" }, "base": "round" },
+            { "id": "t.ex", "slotCost": 3, "categoryId": "odd", "name": { "en": "Ex" }, "base": "ex" }
           ]
         }
         """;
@@ -41,7 +42,9 @@ public sealed class CatalogExtrasTests : IDisposable
         Assert.True(catalog.For("en").TryGet("t.odd", out var odd));
         Assert.Null(odd.SuperEffect);
         Assert.Null(odd.CategoryColor); // "yellow" is not #RRGGBB
-        Assert.Null(odd.Base);          // only "kit" and "mini" are known
+        Assert.Null(odd.Base);          // only "kit", "ex" and "mini" are known
+        Assert.True(catalog.For("en").TryGet("t.ex", out var ex));
+        Assert.Equal("ex", ex.Base);
     }
 
     [Fact]

@@ -202,23 +202,71 @@ import.
   Do not try to get past it. Icons come from the game via FModel on a machine with the
   game, or from Gibax's own browser; the UI mockup uses placeholders until then.
 
+## The real save (measuring PC, 2026-11-19)
+
+Read on a copy of a real save (taken with the game closed, Gibax's OK), game 2.0.0, Steam
+build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
+
+- **File**: `app.sav` in `%APPDATA%\SEGA\SonicRacingCrossWorlds\steam\<SteamID>\` (about
+  1.2 MB; `net.sav`, `option.sav`, `playlog.sav` and replays sit next to it). Steam Cloud's
+  folder `Steam\userdata\<id>\2486820\` only holds its index (`remotecache.vdf`).
+- **Encryption**: the whole file is AES-256 in ECB mode with PKCS#7 padding. The key is not
+  the pak key and is not in the exe on disk (Denuvo); it was found in the running game's
+  memory with a read-only scan, Gibax's OK. **The key is never committed** (public repo):
+  it lives in the git-ignored `extracted/` folder on the measuring PC. Re-encrypting the
+  decrypted file gives the original byte for byte.
+- **Inside**: a standard GVAS (save version 3, package 522/1012, engine 5.4.3, class
+  `/Script/UnionSystem.AppSaveGame`, one 0 byte after the class name, 4 zero bytes after the
+  last "None"), **tagged properties with complete type names** (UE 5.4): property names are
+  in the file, so **reading the save needs no mappings file**. `_Header._RomVersion` = 20000
+  (probably 2.0.0), `_Header._SaveCount` counts saves.
+- **Gadgets** live in `_UserMachineAssemblyData`:
+  - `GadgetPresetDataLists`: **4 local players**, each a `list` of **10 presets (A to J)**,
+    each a `GadgetDataList` of `{ GadgetID: EGadgetId::<name>, SlotIndex: int }`.
+    **`SlotIndex` is the gadget's first cell** (0-2 top row, 3-5 bottom row): the save does
+    store cells, so writing must place gadgets. A 3-slot kit was seen at 3 (cells 3-5), 2-slot
+    gadgets at 1 and 3. An empty preset is either six `EGadgetId::NonGadget` entries or a
+    short list.
+  - `SpGadgetPresetDataLists`: per player, `Presets` (20 entries, only the first 10 used),
+    each with `EquippedSpGadgets`: the Super Slot's gadget at `SlotIndex` 6, or `NonGadget`,
+    or an empty list.
+  - `GadgetList`: one map for the whole save (not per player), `EGadgetId` →
+    `{ bIsNew, LockType }`; `ELockType::None` = unlocked (135 entries, 11 with
+    `ELockType::Price` in this save).
+  - `GadgetSlotNum`: one value for the whole save, Super Slot included (7 = Grand Master).
+  - `GadgetFragmentNum`: gadget fragments (currency).
+  - No duplicate gadget in a preset, and the Super Slot's gadget never also in the rows, in
+    this save.
+- **Core** (branch `core/crossworlds-save-read`): `Saves/Gvas/GvasReader` reads the whole file
+  (unknown types and native structs kept as raw bytes); `Saves/CrossWorlds/SaveCipher`;
+  `Saves/CrossWorlds/CrossWorldsSaveFormat` reads the setups (ids without the `EGadgetId::`
+  prefix, gadgets ordered by cell, `NonGadget` = empty) and **refuses to write** for now.
+  Lower plates (2-5 slots) are assumed to fill the top row first: not seen in a save yet.
+  Tests build synthetic encrypted saves with made-up gadgets and a made-up key.
+- **Game process**: `SonicRacingCrossWorldsSteam.exe` (`UNION\Binaries\Win64`), started by
+  the launcher `SonicRacingCrossWorlds.exe`, which stays open while the game runs.
+- **Mappings for the game data**: a 2.0 `.usmap` was dumped in-game with UE4SS (git-ignored,
+  measuring PC only). The paks open with the AES key already used for modding on that PC.
+- **Decision pending (Gibax)**: how the public tool gets the save key. Agent's advice: ship
+  it with the data packs on the releases page, never in git, like the icons.
+
 ## Open questions
 
-1. **Save location.** Reported on a forum (not checked):
-   `%APPDATA%\Sega\SonicRacingCrossWorlds\steam\<SteamID>`. Steam Cloud's own copy may sit
-   under `Steam\userdata\<id>\2486820\remote`. SteamDB's cloud page for the app lists the
-   real paths: https://steamdb.info/app/2486820/ufs
-2. **Save format.** Standard Unreal `SaveGame` (GVAS: the file starts with the 4 bytes
-   `GVAS`, readable with existing libraries) or a Sega format, encrypted or compressed
-   (needs reverse engineering). This is the go/no-go for the whole project.
-3. **Per-player setups.** Does the save really hold separate gadget setups for local
-   players 2 to 4, or do guests use something else? (The wiki does not say.)
-4. **Pak encryption.** Are the release paks encrypted? The open beta was reported
-   unencrypted, and Year 2 content has been datamined, which is a good sign.
+1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).
+2. ~~Save format.~~ Answered 2026-11-19: encrypted GVAS, readable. The project is a go.
+3. ~~Per-player setups.~~ Answered 2026-11-19: 4 players with 10 presets each; unlocked
+   gadgets and plate level are shared.
+4. ~~Pak encryption.~~ Answered: encrypted, key known on the measuring PC.
 5. **Prior art.** The Crossworlds Gadget Randomizer
-   (https://silviafoxgames.itch.io/crossworlds-gadget-randomizer) may already write the
-   save; if so, the format is already worked out. No CrossWorlds save editor was found.
+   (https://silviafoxgames.itch.io/crossworlds-gadget-randomizer) also runs in a browser
+   (HTML5), so it most likely does not touch the save. No CrossWorlds save editor was found.
 6. **Online.** Is the gadget plate also stored server-side? Matters for how safe editing is.
-7. **Game process name**, for `ProcessNameProbe` (refuse to save while the game runs).
-8. **Duplicates and cells.** Can the game equip one gadget twice? Does the save store each
-   gadget's cell in the grid?
+7. ~~Game process name.~~ Answered 2026-11-19: `SonicRacingCrossWorldsSteam` (and the
+   launcher `SonicRacingCrossWorlds`).
+8. **Duplicates.** Can the game equip one gadget twice? Not seen in the save. Cells: answered,
+   the save stores each gadget's first cell.
+9. **Writing**: does the game accept a save the tool re-encrypts (it should: the bytes come
+   out identical), and does it check anything else (`_SaveCount`, Steam Cloud)? To test on a
+   copy first, with Gibax's OK.
+10. **Lower plates**: how a 2- to 5-slot plate maps to cells (a save with a lower plate is
+    needed).

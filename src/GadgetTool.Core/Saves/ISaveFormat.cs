@@ -3,8 +3,9 @@ using GadgetTool.Core.Setups;
 namespace GadgetTool.Core.Saves;
 
 /// <summary>
-/// Reads the gadget part of a save and writes it back. The real CrossWorlds format is not
-/// known yet; <see cref="DevJsonSaveFormat"/> stands in for it meanwhile.
+/// Reads the gadget part of a save and writes it back: the game's own save
+/// (<see cref="CrossWorlds.CrossWorldsSaveFormat"/>, read only for now) or the made-up
+/// <see cref="DevJsonSaveFormat"/> used for development and tests.
 /// </summary>
 public interface ISaveFormat
 {

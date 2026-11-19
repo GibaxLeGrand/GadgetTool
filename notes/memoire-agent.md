@@ -397,6 +397,33 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
 - The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
   images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.
 
+## The game's plates and the generated sample (2026-11-19, branch `ui/game-plates`)
+
+- Gibax asked for the game's plates and its empty cell. The extractor reads
+  `DT_GadgetPlateData` (catalog `plates`) and cuts the seven frames of
+  `UI_GadgetCustom_GadgetPlate` to `ui/plate-<n>.png`; `plateGeometry` (from
+  `WBP_GadgetCustom_Sub_GadgetPlate`) says where the cells, Super Slot and name go. Details
+  and the 2.0.0 table in `docs/DATA.md`.
+- Every plate picture already draws the six cells and the Super Slot empty (the dark "G"
+  hexagon): that is the game's empty cell, so the page draws nothing on an empty cell (a "+"
+  on hover) and darkens a closed one under `ui/lock.png`. The page picks the plate by slot
+  count and Super Slot (`RentalPlate` skipped); without a pack it draws its own plate.
+- Assumed, not seen: a lower plate fills its cells left to right, top row first (as the
+  save's `[n]` / `[3, n-3]` rows say). To check in the game with a lower plate.
+- v0.1.0 on the work PC showed "30/148 unlocked", everything locked, "1/7 slots !": the
+  bundled `data/dev/save.json` has made-up ids. With the game's data (`catalog.Plates` not
+  empty) the app now writes the sample from the gadget list (`SampleSave.Generate`: P1 Grand
+  Master, P2 Master, P3 Gold, P4 Bronze, every gadget unlocked, presets A-F filled and valid,
+  G-J empty, always the same file).
+- Gibax: "for the test preset, just turn off save/import/export, but unlock everything". The
+  sample (the file at `SampleCopyPath`, however it was opened) is read-only: the bridge
+  refuses `save`, `exportFile` and `importFile` with `sampleReadOnly` and tells the page
+  (`sample: true` in the open reply); the page greys out Save, Share... and Import... and says
+  why. Editing, copying and pasting between presets still work. The browser stand-in does
+  the same.
+- In the game view, a container-sized plate inside a shrink-wrapped column is 0 pixels wide:
+  `#gamePlateSlot` stretches.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).
@@ -416,4 +443,4 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
    out identical), and does it check anything else (`_SaveCount`, Steam Cloud)? To test on a
    copy first, with Gibax's OK.
 10. **Lower plates**: how a 2- to 5-slot plate maps to cells (a save with a lower plate is
-    needed).
+    needed). The page assumes left to right, top row first (see "The game's plates").

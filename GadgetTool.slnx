@@ -2,8 +2,10 @@
   <Folder Name="/src/">
     <Project Path="src/GadgetTool.App/GadgetTool.App.csproj" />
     <Project Path="src/GadgetTool.Core/GadgetTool.Core.csproj" />
+    <Project Path="src/GadgetTool.Extractor/GadgetTool.Extractor.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/GadgetTool.Core.Tests/GadgetTool.Core.Tests.csproj" />
+    <Project Path="tests/GadgetTool.Extractor.Tests/GadgetTool.Extractor.Tests.csproj" />
   </Folder>
 </Solution>

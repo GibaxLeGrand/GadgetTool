@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The maintainer's extractor: reads the game's gadget tables (with the game's AES key and
+       mappings, never stored here) and writes a data pack (docs/DATA.md). Run on a machine
+       with the game; its output never goes into git. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>GadgetTool.Extractor</AssemblyName>
+    <RootNamespace>GadgetTool.Extractor</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CUE4Parse" Version="1.2.2.202611" />
+    <!-- CUE4Parse brings 9.0.0, which has a known denial-of-service advisory (GHSA-73j8-2gch-69rq). -->
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.15" />
+    <ProjectReference Include="..\GadgetTool.Core\GadgetTool.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GadgetTool.Extractor.Tests" />
+  </ItemGroup>
+
+</Project>

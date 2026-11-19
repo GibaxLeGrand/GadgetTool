@@ -45,19 +45,28 @@ the branch `core/crossworlds-save-read`. **The resume point is at the end of thi
 - `extracted/legacy_gadget/`: the gadget tables extracted from the paks.
 - `samples/A/app.sav` and `samples/A/app.decrypted.gvas`.
 
+## Later the same session: the extractor
+
+- PR #1 (save reading) was merged by Gibax.
+- `src/GadgetTool.Extractor` and `tests/GadgetTool.Extractor.Tests` (branch
+  `extractor/gadget-catalog`): the 2.0.0 pack was written locally to
+  `extracted/pack/2.0.0/catalog.json` (git-ignored): 148 gadgets, 13 categories, 15
+  languages, 68 Super effects; every gadget of the save copy is in it. Details in
+  `../memoire-agent.md` (section "The extractor") and `docs/DATA.md`, which also shows how
+  to run it. On the measuring PC the Oodle dll and the pak key sit with the modding tools,
+  outside this repository; the 2.0 mappings are in `extracted/mappings/`.
+
 ## RESUME POINT
 
 Ask Gibax before launching anything or touching a real save.
 
 1. Gibax decides how the public tool gets the save key (advice: in the release's data
    packs, never in git).
-2. Commit the branch's work (Core, Tests, App, Notes: one commit per subject) and open a PR,
-   when Gibax says so.
+2. Icons: export each gadget's icon (`icon` path in the pack) to `icons/<id>.png`.
 3. App: open the real save (find `app.sav` under `%APPDATA%\SEGA\SonicRacingCrossWorlds\steam`,
-   load the key from the local file for now), read only, with the real gadget list.
-4. Extractor (`src/GadgetTool.Extractor`, CUE4Parse): read `DT_GadgetData` & co. with the 2.0
-   mappings into a `docs/DATA.md` catalog (names in every language, slot costs, categories,
-   icons). Ids must match the save's `EGadgetId` names without the prefix.
-5. Writing: rebuild the gadget arrays with cells (`SlotIndex` = first cell, Super Slot = 6),
+   load the key from the local file for now), read only, with the extracted catalog. First
+   make the Core compare gadget ids ignoring case (see `../memoire-agent.md`).
+4. Writing: rebuild the gadget arrays with cells (`SlotIndex` = first cell, Super Slot = 6),
    re-encrypt, test on a **copy** of the save in the game (Gibax's OK), then the real one with
    a backup.
+5. First release with the 2.0.0 pack (icons included) on the releases page.

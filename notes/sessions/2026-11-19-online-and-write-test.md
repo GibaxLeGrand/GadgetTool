@@ -136,3 +136,29 @@ else is needed; with it on, if Steam reports a conflict, keep the local files.
 What to report: any message from the game at start, anything missing or reset, and whether
 P1 J looks as written. If all is well, question 9 is closed and writing can be used for
 real presets.
+
+## Result: the in-game test (2026-11-19, about 21:10 to 21:20, Gibax at the measuring PC)
+
+**The game accepts a save written by GadgetTool.** Steps as above, with these details:
+
+- The game and launcher were closed; the whole save folder was copied to
+  `D:\GadgetTool_backup\save-20261119-2110` (53 files, every SHA-256 equal to the
+  original). Steam Cloud's index already had the same `app.sav` (same size and SHA-1).
+- GadgetTool (Release build of `main` at `4713f04`, started through `explorer.exe` so that it
+  runs outside the Claude app's package, whose writes to `%AppData%` would be redirected)
+  wrote the save twice; it backed up the file before each write
+  (`%LOCALAPPDATA%\GadgetTool\backups\app.sav.<time>.bak`). Gibax changed **P1 E and P1 G**
+  (not J). Read back from a copy: those two presets only, both within the rules; unlocked
+  gadgets (123 a player), plate level (Grand Master) and `_Header` unchanged
+  (`_SaveCount` 4152).
+- **In the game**: no message at start; P1 E and P1 G as written; the rest as before. The
+  game saved on its own about a minute later: its file keeps P1 E and P1 G exactly, every
+  other preset is unchanged, and `_SaveCount` went from 4152 to 4153, so leaving it as the
+  game last wrote it is fine.
+- **Steam Cloud**: afterwards, Steam's index (`remotecache.vdf`) had the game's new
+  `app.sav` (same size and SHA-1, synced), with no conflict. The index was updated a few
+  seconds after the game's own save, during the first session: Steam Cloud was apparently
+  still on then, and it did not matter.
+
+Question 9 is closed: writing can be used for real presets. Local tools used (git-ignored):
+`extracted/tools/check_q9.cs`, `extracted/tools/compare_saves.cs`; copies in `samples/T`.

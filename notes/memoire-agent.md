@@ -475,7 +475,9 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
    launcher `SonicRacingCrossWorlds`).
 8. **Duplicates.** Can the game equip one gadget twice? Not seen in the save. Cells: answered,
    the save stores each gadget's first cell.
-9. **Writing**: does the game accept a save the tool re-encrypts (it should: the bytes come
+9. ~~**Writing**~~ **Answered 2026-11-19 in the game: the game accepts a save GadgetTool
+   wrote** (see the session note's "Result"). Before that: does the game accept a save the
+   tool re-encrypts (it should: the bytes come
    out identical), and does it check anything else (`_SaveCount`, Steam Cloud)? 2026-11-19,
    on a copy (`sessions/2026-11-19-online-and-write-test.md`): re-encryption and unchanged
    writes are byte-identical, an edit reads back right, the save has **no checksum**,

@@ -316,7 +316,11 @@
       onmouseenter: () => showInfo(g),
       onmouseleave: () => showInfo(null),
     },
-    h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name)),
+    // As in the game: the gadget's art fills its cell, no name (it is in the tooltip and the
+    // info box). Placeholders keep the name: initials alone say too little.
+    g.icon
+      ? h("div", { class: "inner art" }, icon(g))
+      : h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name)),
     h("button", { type: "button", class: "x", title: "Remove", onclick: (e) => { e.stopPropagation(); removeGadget(g.id); } }, "×"));
   }
 
@@ -530,8 +534,8 @@
     },
     h("span", { class: "g-cost", title: `${g.slotCost} slot${g.slotCost > 1 ? "s" : ""}` }, g.slotCost),
     equipped ? h("span", { class: "g-check", title: inSuper ? "In the Super Slot" : "Equipped" }, inSuper ? "★" : "✓") : null,
-    h("span", { class: "hex s1 g-hex" }, icon(g)),
-    h("span", { class: "g-name" }, g.name));
+    h("span", { class: "hex s1 g-hex" + (g.icon ? " art" : "") }, icon(g)),
+    g.icon ? null : h("span", { class: "g-name" }, g.name));
   }
 
   /** The description box under the plate (game-style view): the gadget pointed at, or the preset. */

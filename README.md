@@ -6,8 +6,9 @@ build, copy, paste, export and import gadget setups for every slot and every loc
 
 > **Status: early work, not usable on real saves yet.** The Windows app runs on a sample
 > save with made-up gadgets: rules, copy/paste, share codes, export/import and safe saving
-> all work. The game's save format is not known yet; the next step is to analyse real save
-> files. See [notes/](notes/) for the plan and the resume point.
+> all work. The game's save format is now known and the Core reads it (read only); the
+> app does not open real saves yet, and nothing writes them. See [notes/](notes/) for the
+> plan and the resume point.
 
 ## Build and run
 

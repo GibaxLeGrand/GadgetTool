@@ -169,9 +169,13 @@ import.
     game (Steam build id from the appmanifest: no key needed on the player's side), falls
     back to the newest older pack with a warning, and can download new packs on demand
     ("Check for data updates", from the repository's GitHub Releases: release assets,
-    never files in git; hashes checked; never automatic). **Icons: in the release (Gibax, 2026-11-19)**: data packs in the release
-    archive (and the online packs) include the gadget icons; they never go into the git
-    repository. Players with the AES key can still read them from their own install.
+    never files in git; hashes checked; never automatic).
+  - **Icons and game data: in the release (Gibax, 2026-11-19)**, on
+    https://github.com/GibaxLeGrand/GadgetTool/releases: the first release ships a working
+    2.0.0 data pack (catalog with names, descriptions, slot costs, categories, and the
+    icons). The git repository holds the tools only: the extractor that dumps the game's
+    gadget data, icons included, and the app; no game data or icons (CLAUDE.md rule kept).
+    Players with the AES key can run the extractor on their own install.
   - Gibax's two paths (same day): **offline, exact**: the player gives the AES key and the
     app reads the installed game itself; **online**: the app updates the software and/or
     the data from GitHub. Agent's plan: one extraction library shared by the maintainer

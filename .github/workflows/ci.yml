@@ -1,0 +1,32 @@
+name: CI
+
+# The repository is public, so GitHub-hosted runners cost nothing here.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['notes/**', '**.md']
+  pull_request:
+    paths-ignore: ['notes/**', '**.md']
+  workflow_dispatch:
+
+# A newer push cancels the run still going for an older one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build (warnings are errors)
+        run: dotnet build GadgetTool.slnx -c Release
+
+      - name: Unit tests
+        run: dotnet test GadgetTool.slnx -c Release --no-build

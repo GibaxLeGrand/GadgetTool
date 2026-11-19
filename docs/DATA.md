@@ -184,9 +184,13 @@ whole drawing twice as wide, which covers 2 cells (1132 of 1135 icon pixels, a c
 and the next one 623 further at the plate's 0.6 scale) or 3 cells (1756 of 1758); the small
 hexagons at the ends of the kit frame are drawn squashed in the texture for that. The page
 draws them the same way on the game's plate, centred on their cells (on its own plate,
-without a data pack, it stretches them by the middle). The page draws the 512-pixel icon
-centred over the base, at 512/435 of the base's height, as the two textures line up in the
-game. The pink "EX" bases (`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are for the festival
+without a data pack, it stretches them by the middle); the game moves the icon by 314 and 628
+for 2 and 3 slots (`GadgetIcon_Loop_Cost2`, `_Cost3`), the middle of the cells, as the page
+does. The page draws the 512-pixel icon centred over the base, at 512/435 of the base's
+height, as the two textures line up in the game. The Mini frame is the usual base at 0.8 (its
+blue edge 359 pixels wide instead of 448, its dark inside 324 instead of 407) in a silver
+ring, and the game draws a Mini gadget's icon at 0.8 too (Gibax's renders of "Lv1 Quick
+Charge" and "Mini Lv1 Quick Charge"); the page does the same. The pink "EX" bases (`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are for the festival
 rules' EX gadgets (`WBP_StatusInfo_Sub_EXGadgetDetail`, `festa_rule_gadget_ex`) and are
 not exported.
 

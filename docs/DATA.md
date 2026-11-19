@@ -70,7 +70,7 @@ The extractor also writes these; `CatalogJson` ignores them for now.
 | `categories` | top | `{ id, sort, color, name }` for each category that holds a gadget, in the game's order; `color` is the game's category colour (`#RRGGBB`). |
 | `superEffect` | gadget | The text shown when the gadget sits in the Super Slot (1-slot gadgets only). |
 | `plate` | gadget | The plate level the gadget needs (`Rank0` to `Rank7`). |
-| `icon` | gadget | The icon's asset path in the game's files, for the icon export (to come). |
+| `icon` | gadget | The icon's asset path in the game's files; the icon itself is `icons/<id>.png`. |
 
 Texts are kept as the game has them: a description may hold a placeholder the game fills in
 (`{GetRing}`) and rich-text tags (`<SpStyle>...</>`). The app has to deal with both.
@@ -91,13 +91,22 @@ dotnet run --project src/GadgetTool.Extractor -- --paks "<game>\UNION\Content\Pa
     --game-version 2.0.0 --out extracted\pack
 ```
 
+`--icons false` skips the icons; `--languages en,fr` reads only some languages.
+
 It refuses to write a pack when the data breaks a rule the app relies on (a gadget wider
-than 3 slots or taller than 1 row, an id repeated ignoring case, an unknown category, a
-gadget without a name in English) and lists every problem. Game 2.0.0 (Steam build
-24996408): 148 gadgets (68 / 35 / 45 at 1 / 2 / 3 slots), 13 categories, 15 languages (`en`,
-`ar`, `de`, `es`, `es-US`, `fr`, `it`, `ja`, `ko`, `pl`, `pt`, `ru`, `th`, `zh-Hans`,
-`zh-Hant`), 68 Super effects. Icons are not exported yet.
+than 3 slots or taller than 1 row, an id repeated ignoring case or holding characters other
+than letters, digits and `_`, an unknown category, a gadget without a name in English) and
+lists every problem. Game 2.0.0 (Steam build 24996408): 148 gadgets (68 / 35 / 45 at 1 / 2 / 3
+slots), 13 categories, 15 languages (`en`, `ar`, `de`, `es`, `es-US`, `fr`, `it`, `ja`,
+`ko`, `pl`, `pt`, `ru`, `th`, `zh-Hans`, `zh-Hant`), 68 Super effects.
+
+**Icons**: `icons/<id>.png`, one per gadget, from the texture its `icon` path names (the
+largest mip, decoded from BC7 with AssetRipper.TextureDecoder, written as 8-bit RGBA PNG with
+transparency). Game 2.0.0: 148 icons of 512x512, about 12 MB; five textures are shared by two
+gadgets each. Thumbnails (`ThumbnailTexture`, 256x256) exist too and are not exported.
 
 Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game
 2.0.0 the save spells them as the table's `ID` field does (the id the extractor writes),
-but the table's row names sometimes differ in case (`run45_...` against `Run45_...`).
+but the table's row names sometimes differ in case (`run45_...` against `Run45_...`), and
+so do asset paths (an icon named `..._run60` in the table is `..._Run60` in the paks): the
+extractor looks files up ignoring case.

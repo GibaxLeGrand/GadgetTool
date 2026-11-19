@@ -14,9 +14,9 @@ internal sealed class MainForm : Form
 {
     private const string PageHost = "gadgettool.example";
 
-    // Not checked yet: the game's process name has not been seen on a machine with the game
-    // (notes/memoire-agent.md, open question 7). A wrong name means saving is not blocked.
-    private static readonly string[] GameProcesses = ["SonicRacingCrossWorlds", "SonicRacingCrossWorlds-Win64-Shipping"];
+    // Seen on 2026-11-19 (game 2.0.0): the launcher SonicRacingCrossWorlds.exe starts
+    // UNION\Binaries\Win64\SonicRacingCrossWorldsSteam.exe and stays open while the game runs.
+    private static readonly string[] GameProcesses = ["SonicRacingCrossWorldsSteam", "SonicRacingCrossWorlds"];
 
     private static readonly Color Background = Color.FromArgb(14, 17, 24);
 

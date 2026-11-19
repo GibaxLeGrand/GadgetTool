@@ -28,6 +28,17 @@ public class ShareCodeTests
     }
 
     [Fact]
+    public void Codes_match_the_web_ui()
+    {
+        // Produced by web/js/backend-mock.js for the same plate: both sides must agree.
+        const string fromWebUi = "GT1-AQIB06Lq_83AVX8UvFV8vPs";
+        var plate = new GadgetPlate([TwoA, OneA], superGadgetId: OneB);
+
+        Assert.Equal(fromWebUi, ShareCode.Encode(plate));
+        Assert.True(ShareCode.Decode(fromWebUi, Catalog).SameGadgetsAs(plate));
+    }
+
+    [Fact]
     public void A_full_plate_gives_a_short_code()
     {
         var code = ShareCode.Encode(new GadgetPlate([OneA, OneB, OneC, OneD, "t.five", "t.six"], superGadgetId: "t.seven"));

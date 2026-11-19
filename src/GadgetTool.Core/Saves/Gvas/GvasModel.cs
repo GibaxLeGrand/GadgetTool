@@ -28,7 +28,12 @@ public sealed class GvasType
 /// <param name="Offset">Where the tag starts (its name).</param>
 /// <param name="ValueOffset">Where the value starts.</param>
 /// <param name="Size">The value's size in bytes, as the tag gives it.</param>
-public sealed record GvasProperty(string Name, GvasType Type, byte Flags, int ArrayIndex, object Value, int Offset, int ValueOffset, int Size);
+/// <param name="SizeOffset">Where the tag's 32-bit size field is.</param>
+public sealed record GvasProperty(string Name, GvasType Type, byte Flags, int ArrayIndex, object Value, int Offset, int ValueOffset, int Size, int SizeOffset)
+{
+    /// <summary>Where the property ends (after its value).</summary>
+    public int End => ValueOffset + Size;
+}
 
 /// <summary>A struct written as tagged properties, ending with "None".</summary>
 public sealed class GvasStruct(IReadOnlyList<GvasProperty> properties)

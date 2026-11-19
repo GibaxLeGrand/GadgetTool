@@ -145,11 +145,11 @@ public class CrossWorldsSaveFormatTests
     }
 
     [Fact]
-    public void Writing_is_refused_for_now()
+    public void Writing_needs_the_slot_costs()
     {
         var bytes = TwoPlayerSave();
         var e = Assert.Throws<SaveFormatException>(() => Format.Write(bytes, Format.Read(bytes)));
-        Assert.Contains("only reads", e.Message);
+        Assert.Contains("slot costs", e.Message);
     }
 
     [Fact]

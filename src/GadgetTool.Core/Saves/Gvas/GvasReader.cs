@@ -75,6 +75,7 @@ public static class GvasReader
                 return new GvasStruct(properties);
 
             var type = ReadType(c, 0);
+            var sizeOffset = c.Position;
             var size = c.Int32();
             if (size < 0 || size > c.Remaining)
                 throw Damaged($"property '{name}' at 0x{offset:X} claims {size} bytes");
@@ -96,7 +97,7 @@ public static class GvasReader
             if (c.Position != valueOffset + size)
                 throw Damaged($"property '{name}' ({type}) at 0x{offset:X} should take {size} bytes, not {c.Position - valueOffset}");
 
-            properties.Add(new GvasProperty(name, type, flags, arrayIndex, value, offset, valueOffset, size));
+            properties.Add(new GvasProperty(name, type, flags, arrayIndex, value, offset, valueOffset, size, sizeOffset));
         }
     }
 

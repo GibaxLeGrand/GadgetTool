@@ -710,6 +710,9 @@ body.theme-game {
 /* The game draws a 512-pixel icon over a base whose drawn part is 435 pixels high, both centred. */
 .art-icon { position: absolute; left: 50%; top: 50%; height: calc(var(--u-h) * 512 / 435); width: auto; aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%); }
+/* The Mini frame is the usual base at 0.8 (its blue edge 359 pixels wide instead of 448) inside
+   a silver ring; the game draws the icon at 0.8 as well, inside the ring. */
+.art.mini .art-icon { height: calc(var(--u-h) * 512 / 435 * 0.8); }
 /* On our own plate a 2- or 3-slot base fills its cells: stretched by its middle, the pointed
    ends (the first 115 pixels of 435 on each side) kept as drawn. */
 .art.long { width: 100%; box-sizing: border-box; border: solid transparent; border-width: 0 calc(var(--u-h) * 115 / 435);

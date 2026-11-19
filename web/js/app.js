@@ -136,7 +136,9 @@
     // Absolute: a relative url() in a CSS variable would be read against the stylesheet.
     const url = new URL(baseUrl(g, where), document.baseURI).href;
     const long = where === "plate" && g.slotCost > 1;
-    return h("span", { class: "art" + (long ? " long" : ""), "aria-hidden": "true", style: long ? `--base:url("${url}")` : null },
+    // The Mini frame is the 1-slot base at 0.8 in a silver ring: the icon is drawn at 0.8 too.
+    const mini = where !== "super" && g.base === "mini";
+    return h("span", { class: "art" + (long ? " long" : "") + (mini ? " mini" : ""), "aria-hidden": "true", style: long ? `--base:url("${url}")` : null },
       h("img", { class: "art-base", src: url, alt: "", draggable: "false" }),
       h("img", { class: "art-icon", src: g.icon, alt: "", draggable: "false" }));
   }

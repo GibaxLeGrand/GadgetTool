@@ -4,19 +4,32 @@ An external gadget setup tool for **Sonic Racing CrossWorlds** (PC, Steam). It l
 build, copy, paste, export and import gadget setups for every slot and every local player
 (1 to 4, offline), without launching the game.
 
-> **Status: early work, not usable yet.** The core (rules, copy/paste, share codes,
-> export/import, safe saving) is written and tested on made-up data. The game's save format
-> is not known yet; the next step is to analyse real save files. See [notes/](notes/) for
-> the plan and the resume point.
+> **Status: early work, not usable on real saves yet.** The Windows app runs on a sample
+> save with made-up gadgets: rules, copy/paste, share codes, export/import and safe saving
+> all work. The game's save format is not known yet; the next step is to analyse real save
+> files. See [notes/](notes/) for the plan and the resume point.
 
-## Build
+## Build and run
 
-Needs the .NET 10 SDK.
+Needs the .NET 10 SDK, on Windows (the app uses WebView2, part of Windows 11).
 
 ```
 dotnet build GadgetTool.slnx
 dotnet test GadgetTool.slnx
+dotnet run --project src/GadgetTool.App
 ```
+
+`--catalog <file>` uses another gadget list; `--dev` turns on the page's developer tools.
+Backups go to `%LOCALAPPDATA%\GadgetTool\Backups`, never next to the save (its folder may be
+synced by Steam Cloud).
+
+| Folder | What |
+|---|---|
+| `src/GadgetTool.Core` | Rules, copy/paste, share codes, export/import, save formats, safe saving, the bridge the page talks to. No UI. |
+| `src/GadgetTool.App` | The Windows window: the page in WebView2, file dialogs, game detection. |
+| `web/` | The editor's interface (see [web/README.md](web/README.md)). |
+| `data/dev/` | Made-up gadgets and a sample save, until the game's files are read. |
+| `tests/` | Unit tests for the Core. |
 
 ## Planned features
 

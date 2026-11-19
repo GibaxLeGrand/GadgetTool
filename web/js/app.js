@@ -123,7 +123,6 @@
     const cost = where === "plate" ? Math.min(Math.max(g.slotCost, 1), 3) : 1;
     const name = where === "super" ? "super"
       : g.base === "mini" ? "mini"
-      : g.base === "ex" ? `ex-kit-${cost === 1 ? 1 : 3}`
       : g.base === "kit" && (cost === 1 || cost === 3) ? `kit-${cost}`
       : String(cost);
     return `${catalog.packUrl}/ui/base-${name}.png`;

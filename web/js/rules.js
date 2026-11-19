@@ -377,7 +377,7 @@
         categoryId: g.categoryId || textIn(g.category, fallback, fallback) || "",
         description: textIn(g.description, language, fallback),
         superEffect: textIn(g.superEffect, language, fallback),
-        base: g.base === "kit" || g.base === "mini" || g.base === "ex" ? g.base : null,
+        base: g.base === "kit" || g.base === "mini" ? g.base : null,
         categoryColor: categoryColors.get(g.categoryId) || null,
         // A pack's catalog names the icon's place in the game's files; only the app turns it into a URL.
         icon: /^https?:\/\//.test(g.icon || "") ? g.icon : null,

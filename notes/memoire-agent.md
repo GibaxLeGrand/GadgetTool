@@ -282,6 +282,22 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
 - Not done yet: icon export (textures, `icon` paths are in the pack), `index.json`, the
   catalog reader for the extra fields (`superEffect`, `categories`...).
 
+## The app on the real save (2026-11-19, branch `app/real-save`)
+
+- `--catalog <pack>\<version>\catalog.json` (its `icons` folder is used too) and
+  `--save-key <file>` (any text holding the 64 hex digits; `CrossWorldsSaveFormat.KeyFromText`).
+  With a key, saves open through `AnySaveFormat` (game save, else the made-up sample); without
+  one, only the sample opens. The open dialog starts in the game's save folder.
+- Icons: the app maps the pack's `icons` folder to `https://icons.gadgettool.example/`
+  (`DenyCors`: images only) and sends each gadget's URL with the catalog (`IconUrl` in
+  `AppBridgeOptions`); the page shows the image, else the old placeholder.
+- Checked on the measuring PC, reading a **copy** of a real save with the extracted 2.0.0
+  catalog through `SaveSession` (`extracted/tools/check_session.cs`): 4 players, Grand Master,
+  123 unlocked gadgets all in the catalog, French names, and **no rule problem on any of the
+  40 presets** (slot costs, rows, Super Slot, unlocked). The model's assumptions hold on real
+  data. The app itself was not launched (Gibax's OK needed).
+- Saving a real save is still refused (`Write`); the page reports the error.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

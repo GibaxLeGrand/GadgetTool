@@ -138,8 +138,14 @@
     const long = where === "plate" && g.slotCost > 1;
     // The Mini frame is the 1-slot base at 0.8 in a silver ring: the icon is drawn at 0.8 too.
     const mini = where !== "super" && g.base === "mini";
-    return h("span", { class: "art" + (long ? " long" : "") + (mini ? " mini" : ""), "aria-hidden": "true", style: long ? `--base:url("${url}")` : null },
+    // The Super Slot's gold base: the game lights its outline and its "G" over it (the masks).
+    const sup = where === "super";
+    const ui = (file) => new URL(`${catalog.packUrl}/ui/${file}`, document.baseURI).href;
+    const style = long ? `--base:url("${url}")`
+      : sup ? `--sup-outline:url("${ui("super-outline.png")}");--sup-mask:url("${ui("super-mask.png")}")` : null;
+    return h("span", { class: "art" + (long ? " long" : "") + (mini ? " mini" : "") + (sup ? " super" : ""), "aria-hidden": "true", style },
       h("img", { class: "art-base", src: url, alt: "", draggable: "false" }),
+      sup ? [h("span", { class: "sup sup-mask" }), h("span", { class: "sup sup-glow" })] : null,
       h("img", { class: "art-icon", src: g.icon, alt: "", draggable: "false" }));
   }
 
@@ -381,6 +387,24 @@
     return catalog.plates.find((x) => x.slots === slots && !!x.superSlot === !!p.superSlot && x.id !== "RentalPlate") || null;
   }
 
+  /**
+   * The plate's name at the game's size (its letters about 52 of the picture's pixels high), made
+   * smaller when it is longer than the band, as the game does with long names. Lengths are in
+   * container units, so the fit holds when the plate is resized.
+   */
+  function fitPlateTitle() {
+    requestAnimationFrame(() => {
+      const band = $("#plate .tplate-title");
+      const text = band?.firstElementChild;
+      if (!text) return;
+      text.style.fontSize = "";
+      // The text is drawn at 0.92 of its width (narrower letters, as in the game).
+      const room = band.clientWidth * 0.94, wide = text.scrollWidth * 0.92;
+      if (wide > room)
+        text.style.fontSize = `calc(var(--tpx) * ${(72 * room / wide).toFixed(2)})`;
+    });
+  }
+
   /** A file of the data pack as an absolute URL (CSS reads relative ones against the stylesheet). */
   const packFile = (path) => new URL(`${catalog.packUrl}/${path}`, document.baseURI).href;
 
@@ -453,7 +477,7 @@
         `--u-h:${u(G.cell * 435 / 512)};--u-w:var(--u-h);--tpx:${u(1)}`,
     },
     h("div", { class: "tplate-title", style: `left:${u(tl)};top:${u(tt)};width:${u(tr - tl)};height:${u(tb - tt)}` },
-      gp.name || `${p.level} plate`),
+      h("span", {}, gp.name || `${p.level} plate`)),
     h("div", { class: "grid tcells" }, cells),
     superEl);
   }
@@ -507,6 +531,7 @@
       if (!rowsOf) extra.push(h("div", { class: "overflow", title: "These gadgets do not fit on this plate" }, known.map((id) => block(gadget(id), { bad: true }))));
       if (unknown.length) extra.push(gridContent[gridContent.length - 1]);
       $("#plate").replaceChildren(renderGamePlate(p, pl, gp, known, costs, rowsOf), ...extra);
+      fitPlateTitle();
     } else {
       const grid = h("div", { class: "grid" }, gridContent);
       const superSlot = renderSuperSlot(p, pl);

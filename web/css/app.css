@@ -713,6 +713,27 @@ body.theme-game {
 /* The Mini frame is the usual base at 0.8 (its blue edge 359 pixels wide instead of 448) inside
    a silver ring; the game draws the icon at 0.8 as well, inside the ring. */
 .art.mini .art-icon { height: calc(var(--u-h) * 512 / 435 * 0.8); }
+/* The game draws its 512x512 1-slot bases (usual, kit, Mini and the Super Slot's gold one) in a
+   580x512 image (WBP_GadgetIcon's Base_01): 580/512 wider than the texture, which fills the
+   plate's cell. The icon keeps its shape. */
+.art:not(.long) > .art-base { transform: scaleX(1.1328); }
+/* The Super Slot's gold base (M_UI_TitlePlateR_Gadget, on UI_GadgetIcon_Base_01_Super_01) is
+   drawn 483 of its 512 pixels high (492 wide), the others 435: taller, in the same box. */
+.art.super > .art-base { height: calc(var(--u-h) * 483 / 435); margin: calc(var(--u-h) * -24 / 435) 0; }
+/* As the game's material draws it: over the texture, added (Blend_LinearDodge), its "G"
+   pattern lit in #FFD235 and its outline in #FFA346, with a #FFF800 light turning around the
+   centre (VectorToRadialValue). The masks are the material's, cut like the base. */
+@property --sup-turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.art.super > .sup { position: absolute; left: 50%; top: 50%; pointer-events: none;
+  height: calc(var(--u-h) * 483 / 435); width: calc(var(--u-h) * 492 / 435); transform: translate(-50%, -50%) scaleX(1.1328);
+  mix-blend-mode: plus-lighter; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.art.super > .sup-mask { background: #ffd235; opacity: .35; -webkit-mask-image: var(--sup-mask); mask-image: var(--sup-mask); }
+.art.super > .sup-glow { -webkit-mask-image: var(--sup-outline); mask-image: var(--sup-outline);
+  background: conic-gradient(from var(--sup-turn), #fff800 0turn, #ffa346 .1turn, #ffa346 .9turn, #fff800 1turn);
+  animation: sup-turn 2.4s linear infinite; }
+@keyframes sup-turn { to { --sup-turn: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .art.super > .sup-glow { animation: none; } }
 /* On our own plate a 2- or 3-slot base fills its cells: stretched by its middle, the pointed
    ends (the first 115 pixels of 435 on each side) kept as drawn. */
 .art.long { width: 100%; box-sizing: border-box; border: solid transparent; border-width: 0 calc(var(--u-h) * 115 / 435);
@@ -745,9 +766,13 @@ body.theme-game {
 .tcell.locked .shade { position: absolute; left: 0; right: 0; top: 7%; bottom: 7%; background: rgba(0, 0, 0, .55);
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); pointer-events: none; }
 .tsuper .hex.block { width: 100%; height: 100%; }
+/* The game's title: its capitals about 52 of the picture's pixels high (Gibax's capture). */
 .tplate-title { position: absolute; display: flex; align-items: center; justify-content: center; white-space: nowrap;
-  font-size: calc(var(--tpx) * 56); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-  background: linear-gradient(180deg, #fff0b0, #e2ae2d 60%, #b9861b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  font-size: calc(var(--tpx) * 72); font-weight: 800; letter-spacing: .01em; text-transform: uppercase; }
+/* The game's letters are narrower: drawn at 0.92 of their width (the gold clipped to the text
+   here, on the transformed text itself). */
+.tplate-title > span { display: inline-block; transform: scaleX(.92); color: transparent;
+  background: linear-gradient(180deg, #fff6c4, #f6d34a 55%, #e0a91f); -webkit-background-clip: text; background-clip: text; }
 /* In the game view the plate's slot would shrink to its content, which a container has none of. */
 .game #gamePlateSlot { align-self: stretch; }
 .game .plate.textured { max-width: 760px; }

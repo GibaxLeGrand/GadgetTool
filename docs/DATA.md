@@ -1,8 +1,8 @@
 # Game data: what the extractor writes, what the app reads
 
-GadgetTool's code lives in this repository; the game's data does not. The extractor (to come,
-run by a maintainer with the game installed and its AES key) reads the game's files and
-writes a **data pack** for one game version. Packs ship on the
+GadgetTool's code lives in this repository; the game's data does not. The extractor
+(`src/GadgetTool.Extractor`, run by a maintainer with the game installed and its AES key)
+reads the game's files and writes a **data pack** for one game version. Packs ship on the
 [releases page](https://github.com/GibaxLeGrand/GadgetTool/releases): the first release
 holds a working 2.0.0 pack. Players with the key can also run the extractor on their own
 install. Mods (`~mods`) are ignored: gadgets are not modded.
@@ -59,8 +59,45 @@ be written: the app shows the one closest to the player's choice and falls back 
 
 `data/dev/catalog.json` is a made-up example in English and French.
 
-## What the extractor still has to find out (on a machine with the game)
+### Written by the extractor, not read by the app yet
 
-See `notes/memoire-agent.md`: AES key, mappings (`.usmap`), where the gadget data lives and
-which fields hold the id, slot cost, category and icon, the localisation files, and where
-the game states its version.
+The extractor also writes these; `CatalogJson` ignores them for now.
+
+| Field | Where | Notes |
+|---|---|---|
+| `steamBuildId` | top | The Steam build the pack was read from (`buildid` in `appmanifest_2486820.acf`). |
+| `languages` | top | Every language written, the default first. |
+| `categories` | top | `{ id, sort, color, name }` for each category that holds a gadget, in the game's order; `color` is the game's category colour (`#RRGGBB`). |
+| `superEffect` | gadget | The text shown when the gadget sits in the Super Slot (1-slot gadgets only). |
+| `plate` | gadget | The plate level the gadget needs (`Rank0` to `Rank7`). |
+| `icon` | gadget | The icon's asset path in the game's files, for the icon export (to come). |
+
+Texts are kept as the game has them: a description may hold a placeholder the game fills in
+(`{GetRing}`) and rich-text tags (`<SpStyle>...</>`). The app has to deal with both.
+
+## The extractor
+
+Reads `DT_GadgetData` and `DT_GadgetCustomCategoryData` (`/Game/01_Union/Database/Gadget/`)
+once per language, with CUE4Parse, from the base game's paks only. Its rules are in
+`PackBuilder` (`src/GadgetTool.Extractor`) and its tests. It needs, all kept out of git:
+
+- the pak AES key (`--aes-key`, the key or a file that holds it);
+- a `.usmap` made for the game version (`--mappings`; UE4SS dumps one in-game);
+- `oo2core_9_win64.dll` (`--oodle`); it is never downloaded by the extractor.
+
+```
+dotnet run --project src/GadgetTool.Extractor -- --paks "<game>\UNION\Content\Paks"
+    --aes-key <key or file> --mappings <file.usmap> --oodle <oo2core_9_win64.dll>
+    --game-version 2.0.0 --out extracted\pack
+```
+
+It refuses to write a pack when the data breaks a rule the app relies on (a gadget wider
+than 3 slots or taller than 1 row, an id repeated ignoring case, an unknown category, a
+gadget without a name in English) and lists every problem. Game 2.0.0 (Steam build
+24996408): 148 gadgets (68 / 35 / 45 at 1 / 2 / 3 slots), 13 categories, 15 languages (`en`,
+`ar`, `de`, `es`, `es-US`, `fr`, `it`, `ja`, `ko`, `pl`, `pt`, `ru`, `th`, `zh-Hans`,
+`zh-Hant`), 68 Super effects. Icons are not exported yet.
+
+Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game
+2.0.0 the save spells them as the table's `ID` field does (the id the extractor writes),
+but the table's row names sometimes differ in case (`run45_...` against `Run45_...`).

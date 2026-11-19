@@ -390,7 +390,9 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   EX = the "AdvancedKit" category on the pink bases; Gibax then checked in the game: the
   Spin Dash kit has the same frame as the kit under it (yellow, notched). So every kit has
   the kit base, and the pink EX bases are not used (not exported). Plate bases stretched
-  with a CSS border-image (ends kept). Still to confirm: where the icon sits on a long base
+  with a CSS border-image (ends kept). Gibax then found an icon off-centre: the game's
+  drawings sit up to 40 px off the middle of their 512 canvas; the extractor now moves each
+  one to the middle (`PngWriter.CenterDrawing`, alpha > 24), all 148 within half a pixel. Still to confirm: where the icon sits on a long base
   (centred here).
 - The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
   images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.

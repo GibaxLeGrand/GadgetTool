@@ -125,7 +125,8 @@ slots), 13 categories, 15 languages (`en`, `ar`, `de`, `es`, `es-US`, `fr`, `it`
 
 **Icons**: `icons/<id>.png`, one per gadget, from the texture its `icon` path names (the
 largest mip, decoded from BC7 with AssetRipper.TextureDecoder, written as 8-bit RGBA PNG with
-transparency). Game 2.0.0: 148 icons of 512x512, about 12 MB; five textures are shared by two
+transparency). The drawing is moved to the middle of its canvas (the game's are up to 40
+pixels off out of 512; the size does not change), so it sits centred on its base. Game 2.0.0: 148 icons of 512x512, about 12 MB; five textures are shared by two
 gadgets each. Thumbnails (`ThumbnailTexture`, 256x256) exist too and are not exported.
 
 **Icon bases** (`ui/`): in the game a gadget is its icon drawn on a base: a blue hexagon

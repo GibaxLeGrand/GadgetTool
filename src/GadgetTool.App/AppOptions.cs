@@ -11,8 +11,10 @@ namespace GadgetTool.App;
 internal sealed record AppOptions(string WebFolder, string CatalogPath, string? SampleSavePath, string DataFolder, bool Dev,
     string? SaveKeyPath = null, string? PacksFolder = null, bool CatalogGiven = false)
 {
-    /// <summary>A data pack keeps one icon per gadget next to its catalog: icons/&lt;id&gt;.png.</summary>
-    public string IconsFolder => Path.Combine(Path.GetDirectoryName(CatalogPath) ?? ".", "icons");
+    /// <summary>The data pack's folder: the catalog's, with icons/&lt;id&gt;.png and ui/ (the game's icon bases).</summary>
+    public string PackFolder => Path.GetDirectoryName(CatalogPath) ?? ".";
+
+    public string IconsFolder => Path.Combine(PackFolder, "icons");
 
     /// <summary>Backups never go next to the save: its folder may be synced by Steam Cloud.</summary>
     public string BackupFolder => Path.Combine(DataFolder, "Backups");

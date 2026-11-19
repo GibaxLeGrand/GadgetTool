@@ -59,21 +59,23 @@ be written: the app shows the one closest to the player's choice and falls back 
 
 `data/dev/catalog.json` is a made-up example in English and French.
 
-### Written by the extractor, not read by the app yet
+### More fields the extractor writes
 
-The extractor also writes these; `CatalogJson` ignores them for now.
-
-| Field | Where | Notes |
-|---|---|---|
-| `steamBuildId` | top | The Steam build the pack was read from (`buildid` in `appmanifest_2486820.acf`). |
-| `languages` | top | Every language written, the default first. |
-| `categories` | top | `{ id, sort, color, name }` for each category that holds a gadget, in the game's order; `color` is the game's category colour (`#RRGGBB`). |
-| `superEffect` | gadget | The text shown when the gadget sits in the Super Slot (1-slot gadgets only). |
-| `plate` | gadget | The plate level the gadget needs (`Rank0` to `Rank7`). |
-| `icon` | gadget | The icon's asset path in the game's files; the icon itself is `icons/<id>.png`. |
+| Field | Where | Read by the app | Notes |
+|---|---|---|---|
+| `superEffect` | gadget | yes | The text shown when the gadget sits in the Super Slot (1-slot gadgets only). Optional texts, like `description`. |
+| `categories` | top | the colours | `{ id, sort, color, name }` for each category that holds a gadget, in the game's order; `color` is the game's category colour (`#RRGGBB`), used by the "game colours" theme. |
+| `steamBuildId` | top | not yet | The Steam build the pack was read from (`buildid` in `appmanifest_2486820.acf`). |
+| `languages` | top | not yet | Every language written, the default first. |
+| `plate` | gadget | not yet | The plate level the gadget needs (`Rank0` to `Rank7`). |
+| `icon` | gadget | via `icons/` | The icon's asset path in the game's files; the icon itself is `icons/<id>.png`. |
 
 Texts are kept as the game has them: a description may hold a placeholder the game fills in
-(`{GetRing}`) and rich-text tags (`<SpStyle>...</>`). The app has to deal with both.
+(`{GetRing}`, `{AllParam}`, `{CostRing}`, `{Prob}`, `{Rate}`, `{Count}`: 43 texts in 2.0.0) and
+rich-text tags (`<SpStyle>...</>`). The page shows the tagged part in bold and each
+placeholder as a "?": the values sit in the game's gadget parameters (`DA_GadgetParameter2`,
+per level and per Default / Mini / Special variant) and which one a text shows is decided by
+the game's code, so GadgetTool does not guess them.
 
 ## The extractor
 

@@ -327,6 +327,22 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   P2 B and P3 J's Super Slot changes exactly those presets; before the lists only the 4-byte
   size field differs, everything after them is identical. Not loaded in the game yet.
 
+## Super effects, category colours, game texts (2026-11-19, branch `app/super-effects-colours`)
+
+- `CatalogJson` reads `superEffect` (texts by language) and the category colours
+  (`categories[].color`, `#RRGGBB` only); `GadgetDefinition` gains `SuperEffect` and
+  `CategoryColor`; the bridge sends both. The page shows the Super effect in the tooltip and
+  in the game-style info box, and the "game colours" theme paints category rows with the
+  game's colours.
+- Game texts: `<SpStyle>...</>` shown in bold; `{Placeholders}` shown as a "?" with a
+  tooltip. Their values exist in `DA_GadgetParameter2` (e.g. `BonusDashPanelMap`: Default /
+  Mini / Special, `RingNumLv1..4`), but which value a text shows is the game's code: **not
+  guessed**. Open question for Gibax: read a few texts in the game (e.g. "Dash Panel Bounty"
+  and its Mini) to see what numbers the game shows, then decide whether to fill them.
+- Checked in the Claude app's browser on the page's stand-in host (python http.server, the
+  pack catalog copied to the git-ignored `extracted/wiki-catalog.json`): French texts,
+  "?" placeholders, bold Super effect, game colours on category rows; no console error.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

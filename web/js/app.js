@@ -1,6 +1,7 @@
-// GadgetTool editor UI. Talks to window.GT (the mock backend for now, the C# Core
-// through WebView2 later). No game asset: icons are placeholders (initials on the
-// category's colour) until the game's own icons are read.
+// GadgetTool editor UI. Rules come from window.GT (rules.js, the Core's rules in JS), data
+// and files from window.GTHost (host.js: the app through WebView2, or a browser stand-in).
+// No game asset: icons are placeholders (initials on the category's colour) until the
+// game's own icons are read.
 (function () {
   "use strict";
 
@@ -25,13 +26,13 @@
 
   // ---- State -------------------------------------------------------------------------
 
-  const usingWiki = !!window.GT_LOCAL_CATALOG;
-  const catalog = GT.makeCatalog(window.GT_LOCAL_CATALOG || window.GT_MOCK_CATALOG);
-  const initial = GT.makeMockSave(catalog);
+  const host = window.GTHost;
+  let catalog = GT.makeCatalog({ source: "", gadgets: [] });
 
   const state = {
-    saved: initial,
-    current: initial,
+    fileName: null,
+    saved: null, // as in the file
+    current: null, // with the edits not saved yet
     undo: [],
     redo: [],
     player: 1,
@@ -49,6 +50,7 @@
 
   function changedPlates() {
     const out = [];
+    if (!state.current) return out;
     for (const p of state.current.players) {
       const s = savedPlayer(p.number);
       p.plates.forEach((pl, i) => { if (!GT.samePlate(pl, s.plates[i])) out.push({ player: p.number, index: i }); });
@@ -97,7 +99,12 @@
   // ---- Render ------------------------------------------------------------------------
 
   function render() {
+    const open = !!state.current;
+    $("#welcome").hidden = open;
+    $("#players").hidden = !open;
+    $("#editorLayout").hidden = !open;
     renderTop();
+    if (!open) return;
     renderPlayers();
     renderPresets();
     renderEditor();
@@ -105,17 +112,23 @@
   }
 
   function renderTop() {
+    const open = !!state.current;
     const n = changedPlates().length;
-    $("#saveInfo").textContent =
-      `${usingWiki ? "Wiki gadgets (local)" : "Made-up gadgets"} · mock save ${state.current.version}` +
-      (n ? ` · ${n} unsaved preset${n > 1 ? "s" : ""}` : " · no unsaved change");
+    $("#saveInfo").textContent = !open
+      ? catalog.source
+      : `${state.fileName} · ${catalog.source}` + (n ? ` · ${n} unsaved preset${n > 1 ? "s" : ""}` : " · no unsaved change");
     $("#undoBtn").disabled = state.undo.length === 0;
     $("#redoBtn").disabled = state.redo.length === 0;
+    $("#importBtn").disabled = !open;
     $("#saveBtn").disabled = n === 0;
     $("#saveBtn").textContent = n ? `Save (${n})` : "Save";
+    $(".brand .tag").textContent = host.kind === "app" ? "early version" : "browser preview";
     const chip = $("#gameState");
     chip.textContent = state.gameRunning ? "Game running" : "Game closed";
     chip.className = "chip " + (state.gameRunning ? "bad" : "ok");
+    chip.title = host.kind === "app"
+      ? "GadgetTool refuses to save while the game runs"
+      : "Browser preview: click to pretend the game is running";
     $("#pasteHereBtn").disabled = !state.clipboard;
   }
 
@@ -280,14 +293,15 @@
     const text = f.text.trim().toLowerCase();
     const shown = catalog.gadgets.filter((g) =>
       (!text || g.name.toLowerCase().includes(text) || (g.description || "").toLowerCase().includes(text)) &&
-      (!f.category || g.category === f.category) &&
+      (!f.category || (g.category || "Other") === f.category) &&
       (!f.cost || g.slotCost === f.cost) &&
       (f.showLocked || p.unlocked.has(g.id)));
 
     const list = [];
     let lastCat = null;
     for (const g of shown) {
-      if (g.category !== lastCat) { list.push(h("div", { class: "lib-cat" }, g.category)); lastCat = g.category; }
+      const category = g.category || "Other";
+      if (category !== lastCat) { list.push(h("div", { class: "lib-cat" }, category)); lastCat = category; }
       const locked = !p.unlocked.has(g.id);
       const inRows = pl.gadgets.includes(g.id);
       const inSuper = pl.super === g.id;
@@ -385,23 +399,71 @@
     }
   }
 
-  function save() {
-    if (state.gameRunning) {
-      toast("Close the game before saving: it would overwrite the changes, and Steam Cloud could sync a half-written save.", "bad");
-      return;
-    }
+  let saving = false;
+
+  async function save() {
+    if (!state.current || saving || !changedPlates().length) return;
     const blocking = changedPlates().filter((t) => GT.validate(player(t.player).plates[t.index], player(t.player), catalog).length);
     if (blocking.length) {
       toast(`Not saved: ${blocking.map((t) => label(t.player, t.index)).join(", ")} break${blocking.length === 1 ? "s" : ""} a rule. Fix or undo first.`, "bad");
       return;
     }
+    const sent = state.current;
     const n = changedPlates().length;
-    state.saved = state.current;
-    const d = new Date();
-    const two = (n) => String(n).padStart(2, "0");
-    const stamp = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}`;
+    saving = true;
+    try {
+      const r = await host.save(GT.toSaveRequest(sent));
+      state.saved = sent;
+      render();
+      toast(`Saved ${n} preset${n === 1 ? "" : "s"}. Backup: ${r.backup}`);
+    } catch (e) {
+      if (e.kind === "saveChanged") {
+        toast(e.message, "bad");
+        if (confirm("The save changed on disk since it was opened (the game or Steam Cloud wrote it).\n\nReload it now? Your unsaved changes will be lost; export them first if you want to keep them.")) {
+          await openWith(() => host.reloadSave(), true);
+        }
+      } else {
+        toast(e.message, "bad");
+      }
+    } finally {
+      saving = false;
+    }
+  }
+
+  // ---- Opening a save ----------------------------------------------------------------
+
+  async function openWith(load, discard = false) {
+    if (!discard && changedPlates().length && !confirm("Discard the unsaved changes?")) return;
+    let dto;
+    try {
+      dto = await load();
+    } catch (e) {
+      $("#welcomeError").textContent = e.message;
+      toast(e.message, "bad");
+      return;
+    }
+    if (!dto || dto.cancelled) return;
+    const save = GT.fromSaveDto(dto);
+    state.fileName = dto.fileName;
+    state.saved = save;
+    state.current = save;
+    state.undo = [];
+    state.redo = [];
+    state.player = save.players[0]?.number ?? 1;
+    state.preset = 0;
+    $("#welcomeError").textContent = "";
     render();
-    toast(`Saved ${n} preset${n > 1 ? "s" : ""} (mockup: nothing written). Backup: save.sav.${stamp}.bak`);
+    const broken = save.players.reduce((n, p) => n + p.plates.filter((pl) => GT.validate(pl, p, catalog).length).length, 0);
+    toast(`Opened ${dto.fileName}.` + (broken ? ` ${broken} preset${broken > 1 ? "s" : ""} already break a rule (marked “!”).` : ""));
+  }
+
+  async function watchGame() {
+    if (host.kind !== "app") return;
+    try {
+      const { running } = await host.gameRunning();
+      if (running !== state.gameRunning) { state.gameRunning = running; renderTop(); }
+    } catch { /* the next tick tries again */ }
+    setTimeout(watchGame, 3000);
   }
 
   // ---- Paste dialog ------------------------------------------------------------------
@@ -520,16 +582,7 @@
     $("#shareDialog").showModal();
   }
 
-  function download(name, text) {
-    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    const a = h("a", { href: url, download: name });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function exportSetups(scope) {
+  async function exportSetups(scope) {
     const entries = [];
     const players = scope === "all" ? state.current.players : [player()];
     for (const p of players) p.plates.forEach((pl, i) => {
@@ -537,8 +590,12 @@
       entries.push({ label: label(p.number, i), plate: pl });
     });
     const name = scope === "all" ? "gadgettool-all.json" : scope === "player" ? `gadgettool-p${state.player}.json` : `gadgettool-${label(state.player, state.preset).replace(" ", "")}.json`;
-    download(name, GT.exportJson(entries));
-    toast(`Exported ${entries.length} preset${entries.length > 1 ? "s" : ""} to ${name}.`);
+    try {
+      const r = await host.exportFile(name, GT.exportJson(entries));
+      if (!r.cancelled) toast(`Exported ${entries.length} preset${entries.length > 1 ? "s" : ""} to ${r.fileName}.`);
+    } catch (e) {
+      toast(e.message, "bad");
+    }
   }
 
   async function copyText(text) {
@@ -569,9 +626,12 @@
 
   // ---- Wiring ------------------------------------------------------------------------
 
+  function fillCategories() {
+    $("#category").replaceChildren(h("option", { value: "" }, "All categories"), ...catalog.categories.map((c) => h("option", { value: c }, c)));
+  }
+
   function wire() {
     const cat = $("#category");
-    cat.replaceChildren(h("option", { value: "" }, "All categories"), ...catalog.categories.map((c) => h("option", { value: c }, c)));
     cat.onchange = () => { state.filter.category = cat.value; renderLibrary(); };
     $("#search").oninput = (e) => { state.filter.text = e.target.value; renderLibrary(); };
     $("#showLocked").onchange = (e) => { state.filter.showLocked = e.target.checked; renderLibrary(); };
@@ -586,7 +646,10 @@
     $("#undoBtn").onclick = undo;
     $("#redoBtn").onclick = redo;
     $("#saveBtn").onclick = save;
-    $("#gameState").onclick = () => { state.gameRunning = !state.gameRunning; renderTop(); };
+    $("#gameState").onclick = () => { if (host.toggleGame) { state.gameRunning = host.toggleGame(); renderTop(); } };
+    $("#openBtn").onclick = () => openWith(() => host.openSave());
+    $("#welcomeOpen").onclick = () => openWith(() => host.openSave());
+    $("#welcomeSample").onclick = () => openWith(() => host.openSample());
     $("#copyBtn").onclick = copyPreset;
     $("#pasteHereBtn").onclick = () => state.clipboard && pasteOrAsk(state.clipboard.plate, state.clipboard.label, [{ player: state.player, index: state.preset }]);
     $("#pasteToBtn").onclick = () => openPasteDialog(plate(), label(state.player, state.preset));
@@ -605,14 +668,15 @@
     $("#shareDialog").addEventListener("click", (e) => { const b = e.target.closest("[data-export]"); if (b) exportSetups(b.dataset.export); });
 
     $("#importReadBtn").onclick = () => readImport($("#importText").value);
-    $("#importFileBtn").onclick = () => $("#fileInput").click();
-    $("#fileInput").onchange = async (e) => {
-      const file = e.target.files[0];
-      e.target.value = "";
-      if (!file) return;
-      const text = await file.text();
-      $("#importText").value = text;
-      readImport(text);
+    $("#importFileBtn").onclick = async () => {
+      try {
+        const file = await host.importFile();
+        if (file.cancelled) return;
+        $("#importText").value = file.content;
+        readImport(file.content);
+      } catch (e) {
+        $("#importError").textContent = e.message;
+      }
     };
 
     // Dropping a placed gadget on the list removes it; dropping a gadget on the plate adds it.
@@ -643,7 +707,8 @@
       const typing = e.target.closest("input, textarea, select") || document.querySelector("dialog[open]");
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (!typing) save(); return; }
-      if (typing) return;
+      if (mod && e.key.toLowerCase() === "o") { e.preventDefault(); if (!typing) openWith(() => host.openSave()); return; }
+      if (typing || !state.current) return;
       if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
       else if (mod && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
       else if (mod && e.key.toLowerCase() === "c" && !String(window.getSelection())) { copyPreset(); }
@@ -657,6 +722,24 @@
     });
   }
 
-  wire();
-  render();
+  async function start() {
+    wire();
+    render();
+    try {
+      catalog = GT.makeCatalog(await host.catalog());
+    } catch (e) {
+      $("#welcomeError").textContent = `The gadget list could not be read: ${e.message}`;
+      return;
+    }
+    fillCategories();
+    render();
+    watchGame();
+    // In a browser preview, start on the sample right away.
+    if (host.kind === "browser") await openWith(() => host.openSample());
+  }
+
+  // For the window: it asks before closing with unsaved changes.
+  window.GTApp = { unsavedCount: () => changedPlates().length };
+
+  start();
 })();

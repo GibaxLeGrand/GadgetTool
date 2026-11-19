@@ -721,3 +721,26 @@ body.theme-game {
 .g-tile.art-tile { width: auto; min-width: 112px; }
 .g-tile.equipped .art { filter: drop-shadow(0 0 5px #8fc0ff) drop-shadow(0 0 2px #ffffff); }
 .g-tile.locked .art { filter: grayscale(1); }
+
+/* The game's own plate (data pack): its picture, with the gadgets, empty and locked cells
+   placed where the game puts them. Lengths come from the picture's pixels (--tpx is one). */
+.plate.textured { background: none; clip-path: none; padding: 0; width: 100%; max-width: 860px; container-type: inline-size; }
+.plate.textured.over .tplate { filter: drop-shadow(0 0 10px var(--accent)); }
+.tplate { position: relative; width: 100%; background-position: center; background-size: 100% 100%; background-repeat: no-repeat; }
+.grid.tcells { position: absolute; inset: 0; display: block; }
+.tplate .on-plate, .tcell, .tsuper { position: absolute; display: flex; align-items: center; justify-content: center; }
+.tplate .hex.block.art-block > .art.long { inset: auto; top: 50%; left: calc(var(--u-h) * 30 / 435); right: calc(var(--u-h) * 30 / 435);
+  width: auto; height: var(--u-h); transform: translateY(-50%); }
+.tcell .plus-mark, .tsuper .plus-mark { position: absolute; width: 26%; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.tcell.empty:hover .plus-mark, .tsuper:hover .plus-mark, .tsuper.over .plus-mark { opacity: .95; }
+.tcell.locked img { position: relative; width: 30%; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+/* The picture's hexagon hole, darkened: flat top and bottom, points left and right. */
+.tcell.locked .shade { position: absolute; left: 0; right: 0; top: 7%; bottom: 7%; background: rgba(0, 0, 0, .55);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); pointer-events: none; }
+.tsuper .hex.block { width: 100%; height: 100%; }
+.tplate-title { position: absolute; display: flex; align-items: center; justify-content: center; white-space: nowrap;
+  font-size: calc(var(--tpx) * 56); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  background: linear-gradient(180deg, #fff0b0, #e2ae2d 60%, #b9861b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* In the game view the plate's slot would shrink to its content, which a container has none of. */
+.game #gamePlateSlot { align-self: stretch; }
+.game .plate.textured { max-width: 760px; }

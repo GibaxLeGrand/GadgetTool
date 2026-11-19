@@ -44,6 +44,10 @@
     const names = new Map(); // fileName -> Map("player:index" -> name), for this page's life only
 
     const fail = (kind, message) => Object.assign(new Error(message), { kind });
+    let sampleOpen = false;
+    const refuseOnSample = () => {
+      if (sampleOpen) throw fail("sampleReadOnly", "The sample save is only for trying GadgetTool: it cannot be saved, and presets cannot be imported into it or exported from it.");
+    };
 
     async function fetchJson(url) {
       const r = await fetch(url, { cache: "no-store" });
@@ -103,18 +107,21 @@
       async openSample() {
         if (this.local) {
           lastName = "generated sample";
-          return { ...GTSample.make(this.local), names: Object.fromEntries(names.get(lastName) || []) };
+          sampleOpen = true;
+          return { ...GTSample.make(this.local), sample: true, names: Object.fromEntries(names.get(lastName) || []) };
         }
         const doc = await fetchJson("../data/dev/save.json");
         lastText = JSON.stringify(doc);
         lastName = "save.json (sample)";
-        return parseDevSave(lastText, lastName);
+        sampleOpen = true;
+        return { ...parseDevSave(lastText, lastName), sample: true };
       },
       async openSave() {
         const file = await pickFile(".json,.sav");
         if (file.cancelled) return file;
         lastText = file.content;
         lastName = file.fileName;
+        sampleOpen = false;
         return parseDevSave(lastText, lastName);
       },
       async reloadSave() {
@@ -122,6 +129,7 @@
         return parseDevSave(lastText, lastName);
       },
       async save(players) {
+        refuseOnSample();
         if (running) throw fail("gameRunning", "Close the game before saving: it would overwrite the changes, and Steam Cloud could sync a half-written save.");
         return { saved: players.length, backup: "(browser preview: nothing was written)" };
       },
@@ -136,6 +144,7 @@
       async gameRunning() { return { running }; },
       toggleGame() { running = !running; return running; },
       async exportFile(name, content) {
+        refuseOnSample();
         const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
         const a = Object.assign(document.createElement("a"), { href: url, download: name });
         document.body.append(a);
@@ -144,7 +153,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         return { fileName: name };
       },
-      importFile: () => pickFile(".gtpresets,.json"),
+      async importFile() { refuseOnSample(); return pickFile(".gtpresets,.json"); },
     };
   }
 
@@ -160,10 +169,11 @@
       };
       const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
       const specs = [
-        { number: 1, rows: [3, 3], superSlot: true, ratio: 0.92 },
-        { number: 2, rows: [3, 3], superSlot: false, ratio: 0.6 },
-        { number: 3, rows: [3, 2], superSlot: false, ratio: 0.4 },
-        { number: 4, rows: [3, 0], superSlot: false, ratio: 0.25 },
+        // Every gadget unlocked, as in the app's sample (Gibax).
+        { number: 1, rows: [3, 3], superSlot: true, ratio: 1 },
+        { number: 2, rows: [3, 3], superSlot: false, ratio: 1 },
+        { number: 3, rows: [3, 2], superSlot: false, ratio: 1 },
+        { number: 4, rows: [3, 0], superSlot: false, ratio: 1 },
       ];
       return {
         fileName: "generated sample",

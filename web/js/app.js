@@ -261,8 +261,18 @@
     for (const b of $("#viewSwitch").children) b.classList.toggle("on", b.dataset.view === state.view);
     $("#viewSwitch").hidden = !open;
     $("#themeSelect").value = state.theme;
-    $("#saveBtn").disabled = n === 0;
-    $("#saveBtn").textContent = n ? `Save (${n})` : "Save";
+    // The sample is only for trying the tool: no saving, importing or exporting (Gibax).
+    const sample = open && state.sample;
+    $("#saveBtn").disabled = n === 0 || sample;
+    $("#saveBtn").textContent = n && !sample ? `Save (${n})` : "Save";
+    for (const id of ["#saveBtn", "#shareBtn", "#importBtn"]) {
+      const b = $(id);
+      if (!b.dataset.title) b.dataset.title = b.title;
+      b.title = sample ? SAMPLE_READ_ONLY : b.dataset.title;
+    }
+    $("#shareBtn").disabled = sample;
+    $("#importBtn").disabled = sample;
+    if (sample) $("#saveInfo").textContent += " · sample: saving, import and export are off";
     $(".brand .tag").textContent = host.kind === "app" ? "early version" : "browser preview";
     const chip = $("#gameState");
     chip.textContent = state.gameRunning ? "Game running" : "Game closed";
@@ -361,6 +371,90 @@
     return svg;
   };
 
+  /** The game's plate for this player's level (data pack only), or null to draw ours. */
+  function gamePlate(p) {
+    if (!catalog.packUrl || !catalog.plateGeometry || !catalog.plates?.length) return null;
+    const slots = GT.slotCount(p);
+    return catalog.plates.find((x) => x.slots === slots && !!x.superSlot === !!p.superSlot && x.id !== "RentalPlate") || null;
+  }
+
+  /** A file of the data pack as an absolute URL (CSS reads relative ones against the stylesheet). */
+  const packFile = (path) => new URL(`${catalog.packUrl}/${path}`, document.baseURI).href;
+
+  /** A 1-slot gadget dragged onto the Super Slot goes there. */
+  function superDrop(slot) {
+    slot.addEventListener("dragover", (e) => { if (hasGadgetDrag(e)) { e.preventDefault(); slot.classList.add("over"); } });
+    slot.addEventListener("dragleave", () => slot.classList.remove("over"));
+    slot.addEventListener("drop", (e) => {
+      slot.classList.remove("over");
+      const id = e.dataTransfer.getData("text/gt-gadget") || e.dataTransfer.getData("text/gt-placed");
+      if (id) { e.preventDefault(); e.stopPropagation(); setSuper(id); }
+    });
+  }
+
+  /**
+   * As in the game: the plate's own picture, the gadgets on its cells at the game's scale, an
+   * empty cell left as the picture draws it (the dark "G" hexagon, the game's empty template),
+   * a cell the plate level does not open darkened under a lock.
+   * Every length is in the picture's pixels, scaled to the plate's width (container units).
+   */
+  function renderGamePlate(p, pl, gp, known, costs, rowsOf) {
+    const G = catalog.plateGeometry;
+    const u = (v) => `calc(100cqw * ${v} / ${G.width})`;
+    const half = G.cell / 2;
+    const at = (cx, cy, cells = 1) => `left:${u(cx - half)};top:${u(cy - half)};width:${u(G.cell + G.step[0] * (cells - 1))};height:${u(G.cell)}`;
+    const cellX = (c) => G.first[0] + G.step[0] * c;
+    const rowY = (r) => G.first[1] + G.step[1] * r;
+    const plus = () => h("img", { class: "plus-mark", src: packFile("ui/plus.png"), alt: "", draggable: "false" });
+    const empty = (style) => h("div", { class: "tcell empty", style, title: "Empty slot" }, plus());
+    const locked = (style, title) => h("div", { class: "tcell locked", style, title },
+      h("span", { class: "shade" }),
+      h("img", { src: packFile("ui/lock.png"), alt: "", draggable: "false" }));
+
+    const cells = [];
+    if (rowsOf) {
+      [0, 1].forEach((r) => {
+        const cap = p.rows[r] ?? 0;
+        let c = 0;
+        known.forEach((id, i) => {
+          if (rowsOf[i] !== r) return;
+          const b = block(gadget(id));
+          b.classList.add("on-plate");
+          b.style.cssText = at(cellX(c), rowY(r), costs[i]);
+          cells.push(b);
+          c += costs[i];
+        });
+        for (; c < cap; c++) cells.push(empty(at(cellX(c), rowY(r))));
+        for (let k = cap; k < 3; k++) cells.push(locked(at(cellX(k), rowY(r)), "Not available on this plate level"));
+      });
+    }
+
+    const superAt = at(G.super[0], G.super[1]);
+    let superEl;
+    if (!p.superSlot) {
+      superEl = locked(superAt, "The Super Slot comes with the Grand Master plate");
+    } else {
+      const g = pl.super && gadget(pl.super);
+      superEl = h("div", { class: "superslot tsuper", style: superAt, title: g ? null : "Drop a 1-slot gadget here: its effect is amplified" },
+        g ? block(g, { super: true })
+          : pl.super ? h("span", { class: "unknown-chip" }, `Unknown: ${pl.super}`)
+          : plus());
+      superDrop(superEl);
+    }
+
+    const [tl, tt, tr, tb] = G.title;
+    return h("div", {
+      class: "tplate",
+      style: `background-image:url("${packFile(gp.image)}");aspect-ratio:${G.width}/${G.height};` +
+        // The gadgets' base is the game's 512-pixel base at its scale: the cell's 435/512.
+        `--u-h:${u(G.cell * 435 / 512)};--u-w:var(--u-h);--tpx:${u(1)}`,
+    },
+    h("div", { class: "tplate-title", style: `left:${u(tl)};top:${u(tt)};width:${u(tr - tl)};height:${u(tb - tt)}` },
+      gp.name || `${p.level} plate`),
+    h("div", { class: "grid tcells" }, cells),
+    superEl);
+  }
+
   function renderEditor() {
     const p = player();
     const pl = plate();
@@ -402,11 +496,21 @@
       })));
     }
 
-    const grid = h("div", { class: "grid" }, gridContent);
-    const superSlot = renderSuperSlot(p, pl);
-    $("#plate").replaceChildren(h("div", { class: "plate-inner" },
-      h("div", { class: "plate-title" }, h("span", {}, `${p.level} plate`)),
-      h("div", { class: "plate-body" }, grid, superSlot)));
+    const gp = gamePlate(p);
+    $("#plate").classList.toggle("textured", !!gp);
+    if (gp) {
+      // The game's plate; gadgets that do not fit, and unknown ones, are listed under it.
+      const extra = [];
+      if (!rowsOf) extra.push(h("div", { class: "overflow", title: "These gadgets do not fit on this plate" }, known.map((id) => block(gadget(id), { bad: true }))));
+      if (unknown.length) extra.push(gridContent[gridContent.length - 1]);
+      $("#plate").replaceChildren(renderGamePlate(p, pl, gp, known, costs, rowsOf), ...extra);
+    } else {
+      const grid = h("div", { class: "grid" }, gridContent);
+      const superSlot = renderSuperSlot(p, pl);
+      $("#plate").replaceChildren(h("div", { class: "plate-inner" },
+        h("div", { class: "plate-title" }, h("span", {}, `${p.level} plate`)),
+        h("div", { class: "plate-body" }, grid, superSlot)));
+    }
 
     const items = [];
     if (issues.length === 0) items.push(h("li", { class: "ok" }, pl.gadgets.length || pl.super ? "This preset follows every rule." : "Empty preset."));
@@ -680,7 +784,10 @@
 
   let saving = false;
 
+  const SAMPLE_READ_ONLY = "The sample save is only for trying GadgetTool: it cannot be saved, and presets cannot be imported into it or exported from it.";
+
   async function save() {
+    if (state.sample) { if (state.current) toast(SAMPLE_READ_ONLY, "bad"); return; }
     if (!state.current || saving || !changedPlates().length) return;
     const blocking = changedPlates().filter((t) => GT.validate(player(t.player).plates[t.index], player(t.player), catalog).length);
     if (blocking.length) {
@@ -724,6 +831,7 @@
     if (!dto || dto.cancelled) return;
     const save = GT.fromSaveDto(dto);
     state.fileName = dto.fileName;
+    state.sample = !!dto.sample;
     state.saved = save;
     state.current = save;
     state.names = save.names;

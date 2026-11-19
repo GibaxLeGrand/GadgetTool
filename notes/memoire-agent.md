@@ -119,6 +119,10 @@ import.
     tabs A–J over a blue plate, a description box, gadgets in rows by category with the slot
     cost on top (his screenshot is of an older version with A–E and no Super Slot).
   - More UI changes to come from him, to copy the game's look more closely.
+  - Then (same day): **keep the colour code of the two modes** (Lists: dark; Game style:
+    blue plate, pastel category rows). **Plate visuals: take them from the game's files**
+    (FModel, on a machine with the game) rather than drawing them in CSS; read at runtime
+    from the player's install, never committed.
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

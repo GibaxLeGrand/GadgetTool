@@ -38,7 +38,11 @@ public sealed record AppBridgeOptions(
     string? SampleSavePath,
     string SampleCopyPath,
     PresetNameStore Names,
-    SeenGameStore Seen);
+    SeenGameStore Seen)
+{
+    /// <summary>The URL of a gadget's icon for the page, or null to draw a placeholder.</summary>
+    public Func<string, string?>? IconUrl { get; init; }
+}
 
 /// <summary>
 /// Answers the web page's calls. The page posts <c>{ "id", "method", "params" }</c>; the answer
@@ -112,6 +116,7 @@ public sealed class AppBridge(AppBridgeOptions options)
                 ["category"] = g.Category,
                 ["categoryId"] = g.CategoryKey,
                 ["description"] = g.Description,
+                ["icon"] = options.IconUrl?.Invoke(g.Id),
             })]),
         };
     }

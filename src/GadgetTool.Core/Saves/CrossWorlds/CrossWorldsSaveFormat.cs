@@ -42,6 +42,20 @@ public sealed class CrossWorldsSaveFormat : ISaveFormat
     /// <param name="key">The game's 32-byte save key.</param>
     public CrossWorldsSaveFormat(ReadOnlySpan<byte> key) => _cipher = new SaveCipher(key);
 
+    /// <summary>
+    /// The save key from a text that holds it: the first run of 64 hex digits, with or without
+    /// "0x" (a key file may be "name=HEX" or the bare key).
+    /// </summary>
+    /// <exception cref="FormatException">No key in the text.</exception>
+    public static byte[] KeyFromText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var match = System.Text.RegularExpressions.Regex.Match(text, "(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])");
+        return match.Success
+            ? Convert.FromHexString(match.Value)
+            : throw new FormatException("No save key (64 hex digits) in the text.");
+    }
+
     public string Name => "Sonic Racing CrossWorlds save";
 
     public bool CanRead(ReadOnlySpan<byte> content) => _cipher.LooksLikeSave(content);

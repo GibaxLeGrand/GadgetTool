@@ -1,7 +1,7 @@
 // GadgetTool editor UI. Rules come from window.GT (rules.js, the Core's rules in JS), data
 // and files from window.GTHost (host.js: the app through WebView2, or a browser stand-in).
-// No game asset: icons are placeholders (initials on the category's colour) until the
-// game's own icons are read.
+// Icons come from the data pack (the app serves them); without one, a placeholder: initials
+// on the category's colour.
 (function () {
   "use strict";
 
@@ -110,8 +110,9 @@
     const words = name.replace(/[^\p{L}\p{N}+ ]/gu, " ").split(/\s+/).filter(Boolean);
     return (words.length === 1 ? words[0].slice(0, 2) : words.slice(0, 2).map((w) => w[0]).join("")).toUpperCase();
   }
-  const icon = (g, small) =>
-    h("span", { class: "icon" + (small ? " small" : ""), style: `--h:${hue(categoryKey(g))}`, "aria-hidden": "true" }, initials(g.name));
+  const icon = (g, small) => g.icon
+    ? h("span", { class: "icon img" + (small ? " small" : ""), "aria-hidden": "true" }, h("img", { src: g.icon, alt: "", loading: "lazy", draggable: "false" }))
+    : h("span", { class: "icon" + (small ? " small" : ""), style: `--h:${hue(categoryKey(g))}`, "aria-hidden": "true" }, initials(g.name));
   /** The category's key: the same in every language, so colours and groups do not move. */
   const categoryKey = (g) => g.categoryId || g.category || "Other";
   const pips = (cost) => h("span", { class: "pips", title: `${cost} slot${cost > 1 ? "s" : ""}` },

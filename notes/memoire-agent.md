@@ -169,8 +169,9 @@ import.
     game (Steam build id from the appmanifest: no key needed on the player's side), falls
     back to the newest older pack with a warning, and can download new packs on demand
     ("Check for data updates", from the GitHub repository, hashes checked; never
-    automatic). Open choice for Gibax: icons in the packs (SEGA art redistributed) or not
-    (placeholders, or read locally when possible).
+    automatic). **Icons: in the release (Gibax, 2026-11-19)**: data packs in the release
+    archive (and the online packs) include the gadget icons; they never go into the git
+    repository. Players with the AES key can still read them from their own install.
   - Gibax's two paths (same day): **offline, exact**: the player gives the AES key and the
     app reads the installed game itself; **online**: the app updates the software and/or
     the data from GitHub. Agent's plan: one extraction library shared by the maintainer

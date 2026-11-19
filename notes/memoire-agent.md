@@ -161,6 +161,16 @@ import.
   - **Mods: ignore them** (Gibax): gadgets are not modded, it is a taboo in the community
     for now. The reader loads the base game's paks only and skips `~mods`; no "with mods"
     option.
+  - **Proposed next (Gibax's idea, agent agrees; not decided yet): a separate data builder.**
+    A maintainer tool (CLI) reads the game's files once per game update, with the AES key
+    and mappings kept on the maintainer's machine, and writes a data pack per game version.
+    The release archive ships `data/index.json` (game version ↔ Steam build id, file
+    hashes) and `data/<version>/catalog.json`. The app picks the pack for the installed
+    game (Steam build id from the appmanifest: no key needed on the player's side), falls
+    back to the newest older pack with a warning, and can download new packs on demand
+    ("Check for data updates", from the GitHub repository, hashes checked; never
+    automatic). Open choice for Gibax: icons in the packs (SEGA art redistributed) or not
+    (placeholders, or read locally when possible).
 - Local test catalog: `extracted/wiki-catalog.json` (git-ignored), built from the wiki's raw
   wikitext by a throwaway script: 138 gadgets, 13 categories, costs 1/2/3 = 62/33/43, 60
   with a Super Effect line. Not in the repo; rebuild it from the wiki if needed.

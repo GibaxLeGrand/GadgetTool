@@ -701,3 +701,18 @@ body.theme-game {
 .hex .inner.art .icon.img,
 .g-hex.art .icon.img { width: calc(var(--u-h) + 6px); height: calc(var(--u-h) + 6px); }
 .g-tile:has(.g-hex.art) { padding-bottom: 8px; }
+
+/* As in the game: the gadget's icon drawn on the game's own base, from the data pack
+   (1-slot hexagon, 2- and 3-slot shapes, kit and mini frames, the gold Super Slot). */
+.art { position: relative; display: inline-block; flex: 0 0 auto; height: var(--u-h); }
+.art-base, .art-icon { pointer-events: none; }
+.art-base { display: block; height: 100%; width: auto; }
+/* The game draws a 512-pixel icon over a base whose drawn part is 435 pixels high, both centred. */
+.art-icon { position: absolute; left: 50%; top: 50%; height: calc(var(--u-h) * 512 / 435); width: auto; aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%); }
+.hex.block.art-block, .theme-game .hex.block.art-block { background: none; clip-path: none; overflow: visible; }
+.hex.block.art-block.bad .art { filter: drop-shadow(0 0 6px var(--bad)) drop-shadow(0 0 2px var(--bad)); }
+.hex.block.art-block::before { display: none; }
+.g-tile.art-tile { width: auto; min-width: 112px; }
+.g-tile.equipped .art { filter: drop-shadow(0 0 5px #8fc0ff) drop-shadow(0 0 2px #ffffff); }
+.g-tile.locked .art { filter: grayscale(1); }

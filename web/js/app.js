@@ -113,6 +113,21 @@
   const icon = (g, small) => g.icon
     ? h("span", { class: "icon img" + (small ? " small" : ""), "aria-hidden": "true" }, h("img", { src: g.icon, alt: "", loading: "lazy", draggable: "false" }))
     : h("span", { class: "icon" + (small ? " small" : ""), style: `--h:${hue(categoryKey(g))}`, "aria-hidden": "true" }, initials(g.name));
+  /** The game's base for a gadget's icon (from the data pack), or null without one. */
+  function baseUrl(g, inSuper) {
+    if (!catalog.packUrl || !g.icon) return null;
+    const cost = Math.min(Math.max(g.slotCost, 1), 3);
+    const name = inSuper ? "super"
+      : g.base === "mini" ? "mini"
+      : g.base === "kit" && (cost === 1 || cost === 3) ? `kit-${cost}`
+      : String(cost);
+    return `${catalog.packUrl}/ui/base-${name}.png`;
+  }
+  /** As in the game: the gadget's icon drawn on its base (1-, 2- or 3-slot, kit, mini, Super Slot). */
+  const art = (g, inSuper) => h("span", { class: `art c${Math.min(Math.max(g.slotCost, 1), 3)}`, "aria-hidden": "true" },
+    h("img", { class: "art-base", src: baseUrl(g, inSuper), alt: "", draggable: "false" }),
+    h("img", { class: "art-icon", src: g.icon, alt: "", draggable: "false" }));
+
   /** The category's key: the same in every language, so colours and groups do not move. */
   const categoryKey = (g) => g.categoryId || g.category || "Other";
   const pips = (cost) => h("span", { class: "pips", title: `${cost} slot${cost > 1 ? "s" : ""}` },
@@ -308,8 +323,9 @@
 
   /** A gadget on the plate: the 1-, 2- or 3-slot shape, never stretched. */
   function block(g, opts = {}) {
+    const onBase = !!baseUrl(g, opts.super);
     return h("div", {
-      class: `hex s${g.slotCost} block${opts.super ? " super" : ""}${opts.bad ? " bad" : ""}`,
+      class: `hex s${g.slotCost} block${opts.super ? " super" : ""}${opts.bad ? " bad" : ""}${onBase ? " art-block" : ""}`,
       title: tip(g),
       draggable: "true",
       ondragstart: (e) => { e.dataTransfer.setData("text/gt-placed", g.id); e.dataTransfer.effectAllowed = "move"; },
@@ -318,8 +334,8 @@
     },
     // As in the game: the gadget's art fills its cell, no name (it is in the tooltip and the
     // info box). Placeholders keep the name: initials alone say too little.
-    g.icon
-      ? h("div", { class: "inner art" }, icon(g))
+    onBase ? art(g, opts.super)
+      : g.icon ? h("div", { class: "inner art" }, icon(g))
       : h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name)),
     h("button", { type: "button", class: "x", title: "Remove", onclick: (e) => { e.stopPropagation(); removeGadget(g.id); } }, "×"));
   }
@@ -513,9 +529,10 @@
     const locked = !p.unlocked.has(g.id);
     const inSuper = pl.super === g.id;
     const equipped = inSuper || pl.gadgets.includes(g.id);
+    const onBase = !!baseUrl(g, false);
     return h("button", {
       type: "button",
-      class: "g-tile" + (locked ? " locked" : "") + (equipped ? " equipped" : ""),
+      class: "g-tile" + (locked ? " locked" : "") + (equipped ? " equipped" : "") + (onBase ? " art-tile" : ""),
       title: locked ? `${tip(g)}\n\nNot unlocked for player ${p.number}.` : tip(g),
       "aria-disabled": locked ? "true" : null,
       draggable: locked ? null : "true",
@@ -534,7 +551,7 @@
     },
     h("span", { class: "g-cost", title: `${g.slotCost} slot${g.slotCost > 1 ? "s" : ""}` }, g.slotCost),
     equipped ? h("span", { class: "g-check", title: inSuper ? "In the Super Slot" : "Equipped" }, inSuper ? "★" : "✓") : null,
-    h("span", { class: "hex s1 g-hex" + (g.icon ? " art" : "") }, icon(g)),
+    onBase ? art(g, false) : h("span", { class: "hex s1 g-hex" + (g.icon ? " art" : "") }, icon(g)),
     g.icon ? null : h("span", { class: "g-name" }, g.name));
   }
 

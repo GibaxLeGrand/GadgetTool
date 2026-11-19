@@ -377,6 +377,7 @@
         categoryId: g.categoryId || textIn(g.category, fallback, fallback) || "",
         description: textIn(g.description, language, fallback),
         superEffect: textIn(g.superEffect, language, fallback),
+        base: g.base === "kit" || g.base === "mini" ? g.base : null,
         categoryColor: categoryColors.get(g.categoryId) || null,
         // A pack's catalog names the icon's place in the game's files; only the app turns it into a URL.
         icon: /^https?:\/\//.test(g.icon || "") ? g.icon : null,
@@ -403,6 +404,8 @@
       gameVersion: parseVersion(source.gameVersion),
       language: source.language || "en",
       languages: source.languages || [source.language || "en"],
+      // The data pack's folder (the game's icon bases in ui/), or null without a pack.
+      packUrl: source.packUrl || null,
       gadgets,
       byId: idMap(gadgets),
       byHash: new Map(gadgets.map((g) => [shareHash(g.id), g])),

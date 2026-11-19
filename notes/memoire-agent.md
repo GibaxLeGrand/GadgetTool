@@ -85,6 +85,10 @@ import.
   adapter can give every player the same set if the save has only one).
 - Icons: the final app reads them from the game files. Wiki icons may be used **locally**
   for prototyping only, in an ignored folder (`extracted/`), never committed.
+  2026-11-19: the wiki's API gives the icon URLs (134 of 139 found, 31 MB at full size), but
+  its image CDN answers scripted downloads with a Cloudflare "Just a moment..." challenge.
+  Do not try to get past it. Icons come from the game via FModel on a machine with the
+  game, or from Gibax's own browser; the UI mockup uses placeholders until then.
 
 ## Open questions
 

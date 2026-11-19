@@ -15,6 +15,7 @@ const string Usage = """
       --game-version <x.y.z>  the game version the pack is for (e.g. 2.0.0)
       --out <folder>          writes <folder>\<version>\catalog.json
       --languages <a,b,...>   only these languages (default: every language the game has)
+      --icons <true|false>    also write <folder>\<version>\icons\<id>.png (default: true)
 
     Keys, mappings and the pack itself never go into git.
     """;
@@ -59,6 +60,9 @@ try
     var costs = check.For(defaultLanguage).Gadgets.GroupBy(g => g.SlotCost).OrderBy(g => g.Key).Select(g => $"{g.Key}-slot: {g.Count()}");
     Console.WriteLine($"Wrote {file}");
     Console.WriteLine($"  {check.For(defaultLanguage).Gadgets.Count} gadgets ({string.Join(", ", costs)}), {check.Languages.Count} languages: {string.Join(", ", check.Languages)}");
+
+    if (!options.TryGetValue("icons", out var icons) || !bool.TryParse(icons, out var writeIcons) || writeIcons)
+        return WriteIcons(game, catalog, Path.Combine(folder, "icons")) ? 0 : 1;
     return 0;
 }
 catch (Exception e) when (e is ArgumentException or KeyNotFoundException or IOException or PackException or InvalidOperationException or FormatException)
@@ -84,6 +88,38 @@ static Dictionary<string, string> ParseArgs(string[] args)
             throw new ArgumentException($"--{required} is missing.");
     }
     return options;
+}
+
+// Each gadget's icon as icons\<id>.png; true when every gadget got one.
+static bool WriteIcons(GameFiles game, JsonObject catalog, string folder)
+{
+    Directory.CreateDirectory(folder);
+    var written = 0;
+    var problems = new List<string>();
+    foreach (var gadget in catalog["gadgets"]!.AsArray().OfType<JsonObject>())
+    {
+        var id = (string)gadget["id"]!;
+        if (gadget["icon"] is not JsonValue icon || !icon.TryGetValue(out string? path))
+        {
+            problems.Add($"'{id}' has no icon.");
+            continue;
+        }
+        try
+        {
+            var (width, height, rgba) = game.TextureRgba(PackBuilder.PackagePath(path));
+            File.WriteAllBytes(Path.Combine(folder, id + ".png"), PngWriter.Encode(width, height, rgba));
+            written++;
+        }
+        catch (Exception e)
+        {
+            problems.Add($"'{id}' ({path}): {e.Message}");
+        }
+    }
+
+    Console.WriteLine($"Wrote {written} icons to {folder}");
+    foreach (var problem in problems)
+        Console.Error.WriteLine("  " + problem);
+    return problems.Count == 0;
 }
 
 // The key itself, or the first key found in a file (so it stays out of the command line and logs).

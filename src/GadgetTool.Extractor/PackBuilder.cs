@@ -44,6 +44,7 @@ internal sealed class PackException(IReadOnlyList<string> problems)
 /// <item>Texts are kept as the game has them: descriptions may hold placeholders filled in by
 /// the game (<c>{GetRing}</c>) and rich-text tags (<c>&lt;SpStyle&gt;...&lt;/&gt;</c>).</item>
 /// <item>Only categories that hold a gadget are listed.</item>
+/// <item>Ids hold only ASCII letters, digits and '_': each names its icon file, <c>icons/&lt;id&gt;.png</c>.</item>
 /// </list>
 /// </remarks>
 internal static class PackBuilder
@@ -94,6 +95,8 @@ internal static class PackBuilder
             var id = Strip(Str(row, "ID") ?? rowName, GadgetEnumPrefix);
             if (!seen.Add(id))
                 problems.Add($"Gadget id '{id}' appears twice (ignoring case).");
+            if (id.Length == 0 || !id.All(c => char.IsAsciiLetterOrDigit(c) || c == '_'))
+                problems.Add($"Gadget id '{id}' has characters other than letters, digits and '_' (it names the icon file).");
 
             var sizeX = Int(row, "SizeX");
             var sizeY = Int(row, "SizeY");
@@ -154,6 +157,15 @@ internal static class PackBuilder
         };
         RemoveEmpty(catalog);
         return catalog;
+    }
+
+    /// <summary>The pak path of a game asset: "/Game/01_Union/X" → "UNION/Content/01_Union/X".</summary>
+    public static string PackagePath(string gamePath)
+    {
+        const string game = "/Game/";
+        return gamePath.StartsWith(game, StringComparison.Ordinal)
+            ? "UNION/Content/" + gamePath[game.Length..]
+            : throw new ArgumentException($"'{gamePath}' is not under /Game/.", nameof(gamePath));
     }
 
     /// <summary>The <c>buildid</c> of a Steam <c>appmanifest_*.acf</c>, or null.</summary>

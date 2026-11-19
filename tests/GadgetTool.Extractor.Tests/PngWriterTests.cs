@@ -73,6 +73,37 @@ public class PngWriterTests
     }
 
     [Fact]
+    public void Centres_what_is_drawn_without_resizing_it()
+    {
+        // 8x6, a 2x2 opaque square at x 0-1, y 3-4: its centre should end up at the middle.
+        var rgba = new byte[8 * 6 * 4];
+        foreach (var (x, y) in new[] { (0, 3), (1, 3), (0, 4), (1, 4) })
+        {
+            rgba[(y * 8 + x) * 4] = 9;
+            rgba[(y * 8 + x) * 4 + 3] = 255;
+        }
+
+        var moved = PngWriter.CenterDrawing(8, 6, rgba);
+
+        var opaque = Enumerable.Range(0, 8 * 6).Where(i => moved[i * 4 + 3] == 255).Select(i => (i % 8, i / 8)).ToList();
+        Assert.Equal([(3, 2), (4, 2), (3, 3), (4, 3)], opaque);
+        Assert.Equal(9, moved[(2 * 8 + 3) * 4]);
+
+        var empty = new byte[8 * 6 * 4];
+        Assert.Same(empty, PngWriter.CenterDrawing(8, 6, empty)); // nothing drawn: nothing to move
+    }
+
+    [Fact]
+    public void A_drawing_already_in_the_middle_stays()
+    {
+        var rgba = new byte[4 * 4 * 4];
+        foreach (var (x, y) in new[] { (1, 1), (2, 1), (1, 2), (2, 2) })
+            rgba[(y * 4 + x) * 4 + 3] = 255;
+
+        Assert.Same(rgba, PngWriter.CenterDrawing(4, 4, rgba));
+    }
+
+    [Fact]
     public void Refuses_pixels_of_the_wrong_size()
     {
         Assert.Throws<ArgumentException>(() => PngWriter.Encode(2, 2, new byte[15]));

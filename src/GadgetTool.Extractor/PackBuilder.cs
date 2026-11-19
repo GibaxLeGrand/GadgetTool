@@ -49,7 +49,8 @@ internal sealed class PackException(IReadOnlyList<string> problems)
 /// <item>Ids hold only ASCII letters, digits and '_': each names its icon file, <c>icons/&lt;id&gt;.png</c>.</item>
 /// <item>The icon's base (the frame the game draws it on): <c>mini</c> for the gadgets of
 /// <c>DA_MiniGadgetList</c>, <c>kit</c> for the categories whose id ends with "Kit" (all
-/// 3-slot in 2.0.0), none for the others. The game picks it in native code
+/// 3-slot in 2.0.0; Gibax checked in the game that the advanced kits too, Spin Dash kit
+/// included, have the kit frame), none for the others. The game picks it in native code
 /// (<c>EquipmentGadgetIcon::SetIconBaseShape</c>); this rule matches its material lists.</item>
 /// </list>
 /// </remarks>
@@ -130,7 +131,9 @@ internal static class PackBuilder
                 ["description"] = Texts(tables.GadgetRows, rowName, "Explanation", languages),
                 ["superEffect"] = Texts(tables.GadgetRows, rowName, "ExplanationSpecial", languages),
                 ["plate"] = Strip(Str(row, "plateId") ?? "", PlateEnumPrefix),
-                ["base"] = mini.Contains(id) ? "mini" : categoryId.EndsWith("Kit", StringComparison.Ordinal) ? "kit" : null,
+                ["base"] = mini.Contains(id) ? "mini"
+                    : categoryId.EndsWith("Kit", StringComparison.Ordinal) ? "kit"
+                    : null,
                 ["icon"] = AssetPath((row["IconTexture"] as JsonObject)?["AssetPathName"]),
             };
             RemoveEmpty(json);

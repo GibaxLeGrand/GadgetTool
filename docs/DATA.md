@@ -125,7 +125,8 @@ slots), 13 categories, 15 languages (`en`, `ar`, `de`, `es`, `es-US`, `fr`, `it`
 
 **Icons**: `icons/<id>.png`, one per gadget, from the texture its `icon` path names (the
 largest mip, decoded from BC7 with AssetRipper.TextureDecoder, written as 8-bit RGBA PNG with
-transparency). Game 2.0.0: 148 icons of 512x512, about 12 MB; five textures are shared by two
+transparency). The drawing is moved to the middle of its canvas (the game's are up to 40
+pixels off out of 512; the size does not change), so it sits centred on its base. Game 2.0.0: 148 icons of 512x512, about 12 MB; five textures are shared by two
 gadgets each. Thumbnails (`ThumbnailTexture`, 256x256) exist too and are not exported.
 
 **Icon bases** (`ui/`): in the game a gadget is its icon drawn on a base: a blue hexagon
@@ -136,16 +137,25 @@ game's canvases have transparent margins, the 2-slot base sits on a 3-slot canva
 | File | Texture (`/Game/01_Union/UI/Common/GadgetIcon/Texture/`) | Used for |
 |---|---|---|
 | `base-1.png`, `base-2.png`, `base-3.png` | `UI_GadgetIcon_Base_01`, `_02`, `_03` | the usual gadgets, by slot cost |
-| `base-kit-1.png`, `base-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001`, `UI_GadgetIcon_Base_03_Kit_001` | `base: kit` (a 2-slot kit uses `base-2.png`, as the game's list does) |
+| `base-kit-1.png`, `base-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001`, `UI_GadgetIcon_Base_03_Kit_001` | `base: kit` |
 | `base-mini.png` | `UI_GadgetIcon_Base_01_Mini` | `base: mini` |
 | `base-super.png` | `UI_GadgetIcon_Base_01_Super_01` | the gadget in the Super Slot |
 
-The game picks the base in native code (`EquipmentGadgetIcon::SetIconBaseShape`); its widget
-lists the materials (`BaseIconGadgetKitMaterialRefArray`, `FrameIconMiniGadgetMaterial`).
-`mini` comes from `DA_MiniGadgetList`; `kit` from the categories whose id ends with "Kit"
-(32 gadgets, all 3-slot, in 2.0.0). The page draws the 512-pixel icon centred over the base,
-at 512/435 of the base's height, as the two textures line up in the game. The pink "EX"
-bases are not used by the gadget icon widget and are not exported.
+The game picks the base in native code (`EquipmentGadgetIcon::SetIconBaseShape`); its
+widgets list the materials (`BaseIconGadgetKitMaterialRefArray`, `FrameIconMiniGadgetMaterial`,
+and in the gadget list's `WBP_GadgetIcon_Cost01_Icon`: `DefaultBaseMaterial`,
+`KitBaseMaterial`, `ExGadgetDefaultBaseMaterial`, `ExGadgetKitBaseMaterial`,
+`MiniBaseMaterial`). `mini` comes from `DA_MiniGadgetList`; `kit` from the categories whose
+id ends with "Kit" (32 kits, all 3-slot in 2.0.0; Gibax checked in the game that the advanced
+ones, the Spin Dash kit included, have the same kit frame as the others).
+
+As in the game (Gibax): **in the gadget list every gadget is drawn on a 1-slot base** (the
+slot cost is shown above it); **on the plate, on its real size**, a 2- or 3-slot base
+stretched by its middle to its cells' width (the pointed ends, 115 of 435 pixels on each
+side, kept as drawn). The page draws the 512-pixel icon centred over the base, at 512/435 of
+the base's height, as the two textures line up in the game. The pink "EX" bases
+(`UI_GadgetIcon_Base_*_EX`, `..._Kit_*_EX`) are not used for any gadget seen so far and are
+not exported.
 
 Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game
 2.0.0 the save spells them as the table's `ID` field does (the id the extractor writes),

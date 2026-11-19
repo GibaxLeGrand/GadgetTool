@@ -384,8 +384,16 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   drawn; each gadget gets `base` (`kit` / `mini` / none) in the catalog; the page draws the
   icon centred on its base, the Super Slot on the gold one. Checked in the Claude app's
   browser on the stand-in host: matches the screenshot for a 1-slot gadget.
-- To check with Gibax in the game: the kit rule (category ending with "Kit"), and where the
-  game puts the icon on a 2- or 3-slot base (centred here).
+- Gibax's corrections (same day): stretch the 2- and 3-slot bases over their cells "comme
+  avant"; in the gadget list every gadget is 1-slot "pour l'ui"; the EX kits ("Spindash
+  etc") on the EX bases, 1-slot in the list and 3-slot on the plate. First tried
+  EX = the "AdvancedKit" category on the pink bases; Gibax then checked in the game: the
+  Spin Dash kit has the same frame as the kit under it (yellow, notched). So every kit has
+  the kit base, and the pink EX bases are not used (not exported). Plate bases stretched
+  with a CSS border-image (ends kept). Gibax then found an icon off-centre: the game's
+  drawings sit up to 40 px off the middle of their 512 canvas; the extractor now moves each
+  one to the middle (`PngWriter.CenterDrawing`, alpha > 24), all 148 within half a pixel. Still to confirm: where the icon sits on a long base
+  (centred here).
 - The app serves the whole pack folder on `https://pack.gadgettool.example/` (`DenyCors`,
   images only): `icons/`, `ui/`; `AppBridgeOptions.PackUrl` tells the page.
 

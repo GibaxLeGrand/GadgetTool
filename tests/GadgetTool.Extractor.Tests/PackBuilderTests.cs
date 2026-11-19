@@ -152,10 +152,12 @@ public class PackBuilderTests
         JsonObject Rows3(string lang) => Rows(
             ("EGadgetId::Speed_A", Gadget("Speed_A", 1, "Speed", 1, "Speed A")),
             ("EGadgetId::Speed_Mini", Gadget("Speed_Mini", 1, "Speed", 2, "Speed Mini")),
-            ("EGadgetId::Big_Kit", Gadget("Big_Kit", 3, "StarterKit", 3, "Big Kit")));
+            ("EGadgetId::Big_Kit", Gadget("Big_Kit", 3, "StarterKit", 3, "Big Kit")),
+            ("EGadgetId::Ex_Kit", Gadget("Ex_Kit", 3, "AdvancedKit", 4, "Ex Kit")));
         JsonObject Categories3(string lang) => Rows(
             ("EGadgetCategory::Speed", Category("Speed", 1)),
-            ("EGadgetCategory::StarterKit", Category("Starter Kit", 2)));
+            ("EGadgetCategory::StarterKit", Category("Starter Kit", 2)),
+            ("EGadgetCategory::AdvancedKit", Category("Advanced Kit", 3)));
         var tables = Tables(Rows3, Categories3) with { MiniGadgets = ["EGadgetId::Speed_Mini"] };
 
         var gadgets = PackBuilder.BuildCatalog(tables, Info)["gadgets"]!.AsArray().Cast<JsonObject>().ToDictionary(g => (string)g["id"]!);
@@ -163,6 +165,7 @@ public class PackBuilderTests
         Assert.Null(gadgets["Speed_A"]["base"]);
         Assert.Equal("mini", (string?)gadgets["Speed_Mini"]["base"]);
         Assert.Equal("kit", (string?)gadgets["Big_Kit"]["base"]);
+        Assert.Equal("kit", (string?)gadgets["Ex_Kit"]["base"]); // advanced kits too have the kit frame
     }
 
     [Fact]

@@ -90,6 +90,54 @@ internal static class PngWriter
         return (w, h, cut);
     }
 
+    /// <summary>
+    /// The pixels moved so that the box around what is drawn (alpha above
+    /// <paramref name="alphaThreshold"/>) sits in the middle of the image; the size stays. The
+    /// game's icons are not always drawn in the middle of their canvas (up to 40 pixels off out
+    /// of 512), and Gibax wants every icon centred on its base. Pixels moved past an edge are
+    /// dropped (the game's icons have room enough around them).
+    /// </summary>
+    public static byte[] CenterDrawing(int width, int height, byte[] rgba, byte alphaThreshold = 24)
+    {
+        int left = width, top = height, right = -1, bottom = -1;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                if (rgba[(y * width + x) * 4 + 3] <= alphaThreshold)
+                    continue;
+                left = Math.Min(left, x);
+                right = Math.Max(right, x);
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+        if (right < 0)
+            return rgba;
+
+        // Twice the shift, to stay in whole pixels: (width - 1) - (left + right) is 2 * (centre - middle).
+        var dx = (int)Math.Round((width - 1 - left - right) / 2.0, MidpointRounding.AwayFromZero);
+        var dy = (int)Math.Round((height - 1 - top - bottom) / 2.0, MidpointRounding.AwayFromZero);
+        if (dx == 0 && dy == 0)
+            return rgba;
+
+        var moved = new byte[rgba.Length];
+        for (var y = 0; y < height; y++)
+        {
+            var ny = y + dy;
+            if (ny < 0 || ny >= height)
+                continue;
+            for (var x = 0; x < width; x++)
+            {
+                var nx = x + dx;
+                if (nx < 0 || nx >= width)
+                    continue;
+                Array.Copy(rgba, (y * width + x) * 4, moved, (ny * width + nx) * 4, 4);
+            }
+        }
+        return moved;
+    }
+
     /// <summary>The PNG (zlib) CRC-32 of <paramref name="data"/>, continuing from <paramref name="crc"/>.</summary>
     internal static uint Crc(uint crc, ReadOnlySpan<byte> data)
     {

@@ -695,3 +695,9 @@ body.theme-game {
   .library { grid-column: 1 / -1; border-left: none; border-top: 1px solid var(--line); max-height: 45vh; }
   body { overflow: auto; }
 }
+
+/* The game's icons have room around the drawing: bigger in the hexagons than the placeholders. */
+.hex .icon.img { width: 64px; height: 64px; }
+@media (max-width: 1380px) {
+  .hex .icon.img { width: 54px; height: 54px; }
+}

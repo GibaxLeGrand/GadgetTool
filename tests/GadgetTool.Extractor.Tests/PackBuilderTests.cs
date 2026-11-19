@@ -174,6 +174,76 @@ public class PackBuilderTests
             ["base-1.png", "base-2.png", "base-3.png", "base-kit-1.png", "base-kit-3.png", "base-mini.png", "base-super.png", "lock.png", "plus.png"],
             PackBuilder.UiTextures.Keys.Order(StringComparer.Ordinal));
 
+    private static JsonObject Plate(string id, int slots, bool super, int frame, string? name) => new()
+    {
+        ["ID"] = "EGadgetPlateId::" + id,
+        ["SlotNum"] = slots,
+        ["bSpSlotOpen"] = super,
+        ["PresetCount"] = 10,
+        ["BaseIndex"] = frame,
+        ["Name"] = Text("plate_" + id, name),
+    };
+
+    [Fact]
+    public void Keeps_the_plate_levels_with_their_picture_and_where_things_go_on_it()
+    {
+        var tables = Tables() with
+        {
+            PlateRows = new Dictionary<string, JsonObject>
+            {
+                ["en"] = Rows(("Rank0", Plate("Rank0", 2, false, 0, "Normal")), ("Rank7", Plate("Rank7", 6, true, 6, "Top"))),
+                ["fr"] = Rows(("Rank0", Plate("Rank0", 2, false, 0, "Normale")), ("Rank7", Plate("Rank7", 6, true, 6, null))),
+            },
+        };
+        var parsed = CatalogJson.Parse(PackBuilder.BuildCatalog(tables, Info).ToJsonString());
+
+        Assert.Equal(["Rank0", "Rank7"], parsed.Plates.Select(p => p.Id));
+        Assert.Equal([2, 6], parsed.Plates.Select(p => p.Slots));
+        Assert.Equal([false, true], parsed.Plates.Select(p => p.SuperSlot));
+        Assert.Equal(["ui/plate-0.png", "ui/plate-6.png"], parsed.Plates.Select(p => p.Image));
+        Assert.Equal("Normale", parsed.Plates[0].Name.Get("fr", "en"));
+        Assert.Equal("Top", parsed.Plates[1].Name.Get("fr", "en")); // no French name: English
+
+        // Every cell, the Super Slot and the title are inside the cropped picture.
+        var g = parsed.PlateGeometry!;
+        Assert.Equal((PackBuilder.PlateCrop.Width, PackBuilder.PlateCrop.Height), (g.Width, g.Height));
+        Assert.InRange(g.FirstX - g.Cell / 2, 0, g.Width);
+        Assert.InRange(g.FirstY - g.Cell / 2, 0, g.Height);
+        Assert.InRange(g.FirstX + 2 * g.StepX + g.Cell / 2, 0, g.Width);
+        Assert.InRange(g.FirstY + g.StepY + g.Cell / 2, 0, g.Height);
+        Assert.InRange(g.SuperX + g.Cell / 2, 0, g.Width);
+        Assert.InRange(g.SuperY + g.Cell / 2, 0, g.Height);
+        Assert.InRange(g.TitleRight, g.TitleLeft, g.Width);
+    }
+
+    [Fact]
+    public void Without_the_plate_table_the_catalog_has_no_plates()
+    {
+        var catalog = PackBuilder.BuildCatalog(Tables(), Info);
+        Assert.Null(catalog["plates"]);
+        Assert.Null(catalog["plateGeometry"]);
+    }
+
+    [Fact]
+    public void Refuses_a_plate_whose_picture_is_not_in_the_atlas()
+    {
+        var tables = Tables() with
+        {
+            PlateRows = new Dictionary<string, JsonObject> { ["en"] = Rows(("Rank9", Plate("Rank9", 6, true, PackBuilder.PlateFrames, "Bad"))) },
+        };
+        var error = Assert.Throws<PackException>(() => PackBuilder.BuildCatalog(tables, Info));
+        Assert.Contains(error.Problems, p => p.Contains("Rank9", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_plate_crop_is_inside_every_frame_of_the_atlas()
+    {
+        var (x, y, w, h) = PackBuilder.PlateCrop;
+        Assert.True(x >= 0 && y >= 0);
+        Assert.InRange(x + w, 1, PackBuilder.PlateFrameWidth);
+        Assert.InRange(y + h, 1, PackBuilder.PlateFrameHeight);
+    }
+
     [Fact]
     public void Maps_game_asset_paths_to_pak_paths()
     {

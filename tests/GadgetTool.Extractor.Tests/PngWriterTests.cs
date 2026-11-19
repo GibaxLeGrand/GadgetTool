@@ -54,6 +54,21 @@ public class PngWriterTests
         Assert.Equal(0xAE426082u, PngWriter.Crc(0xFFFFFFFFu, "IEND"u8) ^ 0xFFFFFFFFu);
 
     [Fact]
+    public void Crops_a_rectangle_and_refuses_one_outside_the_picture()
+    {
+        // 3x2; each pixel's red is its index.
+        var rgba = new byte[3 * 2 * 4];
+        for (var i = 0; i < 6; i++)
+            rgba[i * 4] = (byte)i;
+
+        var cut = PngWriter.Crop(3, 2, rgba, 1, 0, 2, 2);
+
+        Assert.Equal(new byte[] { 1, 2, 4, 5 }, Enumerable.Range(0, 4).Select(i => cut[i * 4]).ToArray());
+        Assert.Throws<ArgumentOutOfRangeException>(() => PngWriter.Crop(3, 2, rgba, 2, 0, 2, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PngWriter.Crop(3, 2, rgba, -1, 0, 1, 1));
+    }
+
+    [Fact]
     public void Trims_the_transparent_margins()
     {
         // 4x3, one opaque pixel at (1,1) and one half-transparent at (2,2); alpha 0 elsewhere.

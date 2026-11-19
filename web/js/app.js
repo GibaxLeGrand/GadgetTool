@@ -136,9 +136,10 @@
     const rows = [0, 1].map((r) => {
       const cap = p.rows[r] ?? 0;
       const cells = [];
-      if (rowsOf) known.forEach((id, i) => { if (rowsOf[i] === r) for (let k = 0; k < costs[i]; k++) cells.push(h("i", { class: "full", style: `--h:${hue(gadget(id).category)}` })); });
-      while (cells.length < cap) cells.push(h("i"));
-      while (cells.length < 3) cells.push(h("i", { class: "lock" }));
+      let used = 0;
+      if (rowsOf) known.forEach((id, i) => { if (rowsOf[i] === r) { cells.push(h("i", { class: `full m${costs[i]}` })); used += costs[i]; } });
+      for (; used < cap; used++) cells.push(h("i", { class: "m1" }));
+      for (let k = cap; k < 3; k++) cells.push(h("i", { class: "m1 lock" }));
       return h("span", { class: "r" }, cells);
     });
     const s = !p.superSlot ? "none" : pl.super ? "full" : "";
@@ -176,15 +177,15 @@
     }));
   }
 
-  function block(g, cost, opts = {}) {
+  /** A gadget on the plate: the 1-, 2- or 3-slot shape, never stretched. */
+  function block(g, opts = {}) {
     return h("div", {
-      class: "block" + (opts.bad ? " bad" : ""),
-      style: `--h:${hue(g.category)};grid-column: span ${cost}`,
+      class: `hex s${g.slotCost} block${opts.super ? " super" : ""}${opts.bad ? " bad" : ""}`,
       title: tip(g),
       draggable: "true",
       ondragstart: (e) => { e.dataTransfer.setData("text/gt-placed", g.id); e.dataTransfer.effectAllowed = "move"; },
     },
-    h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name), pips(g.slotCost)),
+    h("div", { class: "inner" }, icon(g), h("span", { class: "name" }, g.name)),
     h("button", { type: "button", class: "x", title: "Remove", onclick: (e) => { e.stopPropagation(); removeGadget(g.id); } }, "×"));
   }
 
@@ -217,15 +218,15 @@
         let filled = 0;
         known.forEach((id, i) => {
           if (rowsOf[i] !== r) return;
-          cells.push(block(gadget(id), costs[i]));
+          cells.push(block(gadget(id)));
           filled += costs[i];
         });
-        for (; filled < cap; filled++) cells.push(h("div", { class: "cell empty" }, h("span", {}, "Empty")));
-        for (let k = cap; k < 3; k++) cells.push(h("div", { class: "cell locked", title: "Not available on this plate level" }, lockSvg()));
+        for (; filled < cap; filled++) cells.push(h("div", { class: "hex s1 empty", title: "Empty slot" }, h("span", { class: "plus" }, "+")));
+        for (let k = cap; k < 3; k++) cells.push(h("div", { class: "hex s1 locked", title: "Not available on this plate level" }, lockSvg()));
         return h("div", { class: "row" }, cells);
       });
     } else {
-      gridContent = [h("div", { class: "overflow" }, known.map((id) => block(gadget(id), 1, { bad: true })))];
+      gridContent = [h("div", { class: "overflow", title: "These gadgets do not fit on this plate" }, known.map((id) => block(gadget(id), { bad: true })))];
     }
     if (unknown.length) {
       gridContent.push(h("div", { class: "unknowns" }, unknown.map((id) =>
@@ -234,8 +235,9 @@
 
     const grid = h("div", { class: "grid" }, gridContent);
     const superSlot = renderSuperSlot(p, pl);
-    const plateEl = $("#plate");
-    plateEl.replaceChildren(grid, superSlot);
+    $("#plate").replaceChildren(h("div", { class: "plate-inner" },
+      h("div", { class: "plate-title" }, h("span", {}, `${p.level} plate`)),
+      h("div", { class: "plate-body" }, grid, superSlot)));
 
     const items = [];
     if (issues.length === 0) items.push(h("li", { class: "ok" }, pl.gadgets.length || pl.super ? "This preset follows every rule." : "Empty preset."));
@@ -247,31 +249,24 @@
   }
 
   function renderSuperSlot(p, pl) {
-    const wrap = h("div", {});
+    const wrap = h("div", { class: "superslot" });
     if (!p.superSlot) {
-      wrap.append(h("div", { class: "superslot locked", title: "The Super Slot comes with the Grand Master plate" }, h("span", { class: "label" }, "Super Slot", h("br"), "Grand Master only")));
+      wrap.append(h("div", { class: "hex s1 super locked", title: "The Super Slot comes with the Grand Master plate" }, h("span", { class: "label" }, "Super Slot", h("br"), "Grand Master")));
       wrap.append(h("div", { class: "super-caption", style: "color: var(--muted)" }, "Locked"));
       return wrap;
     }
     const g = pl.super && gadget(pl.super);
-    const slot = h("div", {
-      class: "superslot",
-      title: g ? tip(g) : "Drop a 1-slot gadget here: its effect is amplified",
-      ondragover: (e) => { if (hasGadgetDrag(e)) { e.preventDefault(); slot.classList.add("over"); } },
-      ondragleave: () => slot.classList.remove("over"),
-      ondrop: (e) => {
-        slot.classList.remove("over");
-        const id = e.dataTransfer.getData("text/gt-gadget") || e.dataTransfer.getData("text/gt-placed");
-        if (id) { e.preventDefault(); setSuper(id); }
-      },
-    },
-    g
-      ? h("div", { class: "super-block", draggable: "true", ondragstart: (e) => e.dataTransfer.setData("text/gt-placed", g.id) },
-          icon(g, true), h("span", { class: "name" }, g.name),
-          h("button", { type: "button", class: "x", title: "Remove", onclick: () => removeGadget(g.id) }, "×"))
-      : pl.super
-        ? h("span", { class: "label" }, "Unknown:", h("br"), pl.super)
-        : h("span", { class: "label" }, "Super Slot", h("br"), "drop a 1-slot gadget"));
+    const slot = g
+      ? block(g, { super: true })
+      : h("div", { class: "hex s1 super", title: "Drop a 1-slot gadget here: its effect is amplified" },
+          h("span", { class: "label" }, pl.super ? ["Unknown:", h("br"), pl.super] : ["Drop a", h("br"), "1-slot gadget"]));
+    slot.addEventListener("dragover", (e) => { if (hasGadgetDrag(e)) { e.preventDefault(); slot.classList.add("over"); } });
+    slot.addEventListener("dragleave", () => slot.classList.remove("over"));
+    slot.addEventListener("drop", (e) => {
+      slot.classList.remove("over");
+      const id = e.dataTransfer.getData("text/gt-gadget") || e.dataTransfer.getData("text/gt-placed");
+      if (id) { e.preventDefault(); e.stopPropagation(); setSuper(id); }
+    });
     wrap.append(slot, h("div", { class: "super-caption" }, "★ Super Slot"));
     return wrap;
   }

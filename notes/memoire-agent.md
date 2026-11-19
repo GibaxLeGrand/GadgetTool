@@ -12,8 +12,12 @@ decisions are added with their date. The repository is public: technical content
   has it.
 - **No launch without his explicit OK**: the game, the tool's exe, anything that writes a
   real save.
-- **Push**: ask before pushing commits touching `src/`, `tests/` or `.github/workflows/`;
-  docs and notes are pushed freely.
+- **Push**: one commit per subject. Ask before pushing commits touching `src/`, `tests/`,
+  `web/` or `.github/workflows/`; docs and notes are pushed freely. Commit subjects start
+  with their area: `Core:`, `Tests:`, `Web:`, `CI:`, `Docs:`, `Notes:`.
+- `dotnet build` and `dotnet test` need no OK (padlobby's rule): they only touch made-up
+  data. Warnings are errors; every rule in the Core comes with its unit test; every commit
+  builds and passes the tests on its own.
 - Repository identity (local git config): `user.name GibaxLeGrand`, email
   `48137851+GibaxLeGrand@users.noreply.github.com`. Commits end with the Co-Authored-By line.
 
@@ -44,8 +48,43 @@ import.
   7 at Grand Master plate according to others).
 - The repository stays public, and the tool will be released publicly. Everything committed
   must be fit to publish: no SEGA assets, no saves, nothing personal.
-- Stack proposed, not confirmed by Gibax yet: C# .NET 10 with a UI-free Core library, like
-  padlobby and BluestarDeckExport.
+- Stack: C# .NET 10 with a UI-free Core library (`src/GadgetTool.Core`), like padlobby and
+  BluestarDeckExport.
+- **UI: an HTML page hosted in WebView2**, Windows first, fully offline (Gibax). The HTML can
+  be prototyped on its own and then becomes the real UI. An online version is "maybe one
+  day, not a priority at all": do not design for it.
+- Only two pieces need the game: the save adapter (`ISaveFormat`) and the real gadget
+  catalog (from the paks). Everything else is built and tested on made-up data: a dev JSON
+  save format and a hand-written catalog.
+- Game rules, from the Sonic wiki's Gadget page (read 2026-11-19, fetched as raw wikitext;
+  the HTML page refuses scripts) and a Grand Master plate screenshot from Gibax:
+  - The plate is a 3x2 grid: two rows of 3 slots. A gadget takes 1 to 3 slots.
+  - Plate levels: Normal 2 slots, Bronze 3, Silver 4, Gold 5, Master 6, Grand Master 7
+    (the 6 slots plus the **Super Slot**, added in 2.0: any 1-slot gadget placed there gets
+    its "Super Effect").
+  - Presets: the wiki says 5; Gibax remembers 10, lettered A to J (probably 2.0). The count
+    is read from the save, never hardcoded.
+  - Slot costs change with patches (Crash Pads 2 to 1 in 1.4.1, Boost Item Chance UP 3 to
+    2 in 2.0): costs come from the game data, and an old plate can become invalid.
+  - About 139 gadgets on the wiki, including 3-slot kits from Festivals.
+- Model (in `src/GadgetTool.Core`): `PlateLayout` (row sizes + Super Slot), `GadgetPlate`
+  (row gadgets in order + Super Slot gadget), `PlayerSetups`, `SaveSetups`;
+  `PlateValidator` (unknown, not unlocked, duplicate, over capacity, does not fit the rows,
+  no Super Slot, Super Slot needs a 1-slot gadget); `SetupEditor` (copy, paste on one or
+  many presets/players, all or nothing, strict or drop-missing); `ShareCode` (`GT1-...`,
+  ~48 characters for 6 gadgets + Super Slot, checksummed); `SetupJson` (export/import
+  files); `ISaveFormat` + `DevJsonSaveFormat` (stand-in until the real format is known);
+  `SafeSaveWriter` (refuses while the game runs or if the file changed since it was read,
+  timestamped backup, write through a temp file); `SaveSession` (only plates may change;
+  a changed plate that breaks a rule is never written; an untouched broken plate does not
+  block saving).
+- Model assumptions to confirm on real data: a gadget appears at most once on a plate
+  (Super Slot included); a 2- or 3-slot gadget lies within one row; the save does not need
+  each gadget's exact cell (the tool works out an arrangement); how lower plates (2 to 5
+  slots) spread over the rows; unlocked gadgets and plate level are per local player (the
+  adapter can give every player the same set if the save has only one).
+- Icons: the final app reads them from the game files. Wiki icons may be used **locally**
+  for prototyping only, in an ignored folder (`extracted/`), never committed.
 
 ## Open questions
 
@@ -57,10 +96,13 @@ import.
    `GVAS`, readable with existing libraries) or a Sega format, encrypted or compressed
    (needs reverse engineering). This is the go/no-go for the whole project.
 3. **Per-player setups.** Does the save really hold separate gadget setups for local
-   players 2 to 4, or do guests use something else?
+   players 2 to 4, or do guests use something else? (The wiki does not say.)
 4. **Pak encryption.** Are the release paks encrypted? The open beta was reported
    unencrypted, and Year 2 content has been datamined, which is a good sign.
 5. **Prior art.** The Crossworlds Gadget Randomizer
    (https://silviafoxgames.itch.io/crossworlds-gadget-randomizer) may already write the
    save; if so, the format is already worked out. No CrossWorlds save editor was found.
 6. **Online.** Is the gadget plate also stored server-side? Matters for how safe editing is.
+7. **Game process name**, for `ProcessNameProbe` (refuse to save while the game runs).
+8. **Duplicates and cells.** Can the game equip one gadget twice? Does the save store each
+   gadget's cell in the grid?

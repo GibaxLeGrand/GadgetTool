@@ -38,7 +38,7 @@ public sealed class LocalizedText
 /// <summary>A gadget with its texts in every language the data has.</summary>
 /// <param name="CategoryId">A key for the category that does not change with the language (grouping, colours).</param>
 /// <param name="SuperEffect">What it does in the Super Slot; null or empty when it has no Super effect.</param>
-/// <param name="Base">The frame the game draws the icon on: "kit", "ex" (EX kit), "mini", or null for the usual one.</param>
+/// <param name="Base">The frame the game draws the icon on: "kit", "mini", or null for the usual one.</param>
 public sealed record LocalizedGadget(
     string Id,
     int SlotCost,

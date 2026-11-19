@@ -343,6 +343,39 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   pack catalog copied to the git-ignored `extracted/wiki-catalog.json`): French texts,
   "?" placeholders, bold Super effect, game colours on category rows; no console error.
 
+## Data pack index (2026-11-19, branch `data/pack-index`)
+
+- `PackIndex` (Core) reads and writes `index.json` (`gadgettool.packs`, version 1): per pack
+  the game version, the Steam builds it was made from, its folder and every file's SHA-256.
+  `Pick(build)` gives the pack made from that build, else the newest (the app warns).
+  `SteamInstall` (Core, read only) finds the installed build: `libraryfolders.vdf` → the
+  library holding app 2486820 → `appmanifest_2486820.acf` → `buildid`.
+- The extractor writes/updates `index.json` after the catalog and icons. The app takes
+  `--data <folder>` or a `data` folder next to its exe; `--catalog` still wins. Steam's folder
+  comes from `HKCU\Software\Valve\Steam\SteamPath` (read only), else Program Files (x86).
+- Checked on the measuring PC: the local pack's index lists 149 files for 2.0.0, and the
+  installed build 24996408 picks it exactly (`extracted/tools/check_pick.cs`).
+
+## The game's gadget screen (2026-11-19)
+
+- Gibax (from work): "les icônes sont pas comme ça in game", "fais vraiment comme in game":
+  in the game the gadget's art fills its hexagon and no name is written in it. Done for the
+  plate and the gadget list (names stay in tooltips and the info box; placeholders keep
+  them).
+- The game's gadget screen textures are in `/Game/01_Union/UI/Garage/GadgetCustom/Texture/`:
+  `UI_GadgetCustom_GadgetPlate` (4096x4096 atlas of 7 plates: light blue, bronze, silver,
+  gold, dark blue, festival pink/blue, black and gold; each with 2 rows of 3 hexagon cells
+  and the gold Super Slot hexagon on the right), `UI_GadgetCustom_GadgetBase`,
+  `UI_GudgetCustom_BG`, `UI_GudgetCustom_HexagonCursor`, `UI_GudgetCustom_LockIcon`,
+  `UI_GudgetCustom_PlusMark`, tabs (`..._TabBtnBase_*`, `..._TabPict`). Each gadget also has
+  a 256x256 thumbnail (`ThumbnailTexture`, `GadgetTmb/`): a picture on a sky background,
+  apparently for the gadget details, not the hexagons. Exported locally for a look
+  (`extracted/ui_textures/`, `extracted/tools/export_textures.cs`).
+- **Open (needs Gibax, a screenshot of the game's gadget screen with 2- and 3-slot gadgets
+  on the plate)**: how the game draws a multi-slot gadget over separate hexagon cells, which
+  atlas frame goes with which plate level (`DT_GadgetPlateData`, `M_UI_FlipBook_GadgetPlate`),
+  and whether the list uses the icons or the thumbnails. Then use the plate texture itself.
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

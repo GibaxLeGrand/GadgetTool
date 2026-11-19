@@ -97,28 +97,38 @@ public class SetupJsonTests
     {
         SharedPlate[] plates =
         [
-            new("Time trial", new GadgetPlate([TwoA, OneA], superGadgetId: OneB)),
+            new("Time trial", new GadgetPlate([TwoA, OneA], superGadgetId: OneB), new PlateRef(2, 9)),
             new(null, GadgetPlate.Empty),
         ];
 
         var imported = SetupJson.Import(SetupJson.Export(plates));
 
         Assert.Equal(2, imported.Count);
-        Assert.Equal("Time trial", imported[0].Label);
+        Assert.Equal("Time trial", imported[0].Name);
+        Assert.Equal(new PlateRef(2, 9), imported[0].From);
         Assert.True(imported[0].Plate.SameGadgetsAs(plates[0].Plate));
-        Assert.Null(imported[1].Label);
+        Assert.Null(imported[1].Name);
+        Assert.Null(imported[1].From);
         Assert.Empty(imported[1].Plate.GadgetIds);
     }
 
     [Fact]
     public void The_export_is_readable_and_tagged()
     {
-        var json = SetupJson.Export([new("P1 A", Plate(OneA))]);
+        var json = SetupJson.Export([new("Time trial", Plate(OneA), new PlateRef(1, 0))]);
 
         Assert.Contains("\"format\": \"gadgettool.setups\"", json, StringComparison.Ordinal);
-        Assert.Contains("\"gadgets\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"name\": \"Time trial\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"preset\": \"A\"", json, StringComparison.Ordinal);
         Assert.DoesNotContain("\"super\"", json, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("""{ "format": "gadgettool.setups", "version": 1, "plates": [ { "player": 5, "preset": "A", "gadgets": [] } ] }""")]
+    [InlineData("""{ "format": "gadgettool.setups", "version": 1, "plates": [ { "player": 1, "preset": "AB", "gadgets": [] } ] }""")]
+    [InlineData("""{ "format": "gadgettool.setups", "version": 1, "plates": [ { "player": 1, "gadgets": [] } ] }""")]
+    public void A_bad_origin_is_refused(string json) =>
+        Assert.Throws<FormatException>(() => SetupJson.Import(json));
 
     [Theory]
     [InlineData("not json")]

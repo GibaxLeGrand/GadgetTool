@@ -39,7 +39,8 @@ public sealed class AppBridgeTests : IDisposable
         _bridge = new AppBridge(new AppBridgeOptions(
             Catalog, new DevJsonSaveFormat(), _ui, new Probe(() => _gameRunning),
             new FixedTime(new DateTimeOffset(2026, 11, 19, 16, 0, 0, TimeSpan.Zero)),
-            _temp.File("backups"), _temp.File("sample.json"), _temp.File("data/sample-copy.json")));
+            _temp.File("backups"), _temp.File("sample.json"), _temp.File("data/sample-copy.json"),
+            new PresetNameStore(_temp.File("data/names.json"))));
     }
 
     private string SavePath => _temp.File("save.json");
@@ -179,6 +180,37 @@ public sealed class AppBridgeTests : IDisposable
     }
 
     [Fact]
+    public void Names_presets_and_sends_the_names_with_the_save()
+    {
+        Open();
+
+        var reply = Result(Call("renamePreset", new JsonObject { ["player"] = 1, ["index"] = 1, ["name"] = "  Time\ttrial  " }));
+        Assert.Equal("Time trial", reply["name"]!.GetValue<string>());
+
+        var reopened = Open();
+        Assert.Equal("Time trial", reopened["names"]!["1:1"]!.GetValue<string>());
+        Assert.Equal(DevSaveJson, File.ReadAllText(SavePath));
+    }
+
+    [Fact]
+    public void A_blank_name_removes_it()
+    {
+        Open();
+        Call("renamePreset", new JsonObject { ["player"] = 2, ["index"] = 0, ["name"] = "Grand Prix" });
+
+        Assert.Null(Result(Call("renamePreset", new JsonObject { ["player"] = 2, ["index"] = 0, ["name"] = " " }))["name"]);
+        Assert.Empty(Open()["names"]!.AsObject());
+    }
+
+    [Fact]
+    public void Naming_a_preset_that_does_not_exist_is_refused()
+    {
+        Open();
+
+        Assert.Equal("badRequest", ErrorKind(Call("renamePreset", new JsonObject { ["player"] = 1, ["index"] = 10, ["name"] = "X" })));
+    }
+
+    [Fact]
     public void Exports_where_the_user_picks()
     {
         _ui.ExportPath = _temp.File("out.json");
@@ -217,6 +249,46 @@ public sealed class AppBridgeTests : IDisposable
     [Fact]
     public void Garbage_gets_an_error_too() =>
         Assert.Equal("badRequest", JsonNode.Parse(_bridge.Handle("not json"))!["error"]!["kind"]!.GetValue<string>());
+}
+
+public class PresetNameStoreTests
+{
+    [Fact]
+    public void Names_survive_a_restart_and_follow_the_save_path_whatever_its_case()
+    {
+        using var temp = new TempFolder();
+        var file = temp.File("names.json");
+        var save = temp.File("Save.sav");
+
+        new PresetNameStore(file).Set(save, new PlateRef(3, 9), "Mirror cups");
+        var names = new PresetNameStore(file).NamesFor(save.ToUpperInvariant());
+
+        Assert.Equal("Mirror cups", names["3:9"]);
+        Assert.Empty(new PresetNameStore(file).NamesFor(temp.File("other.sav")));
+    }
+
+    [Theory]
+    [InlineData("  Time   trial ", "Time trial")]
+    [InlineData("Line\nbreak", "Line break")]
+    [InlineData("   ", null)]
+    [InlineData(null, null)]
+    public void Names_are_cleaned(string? name, string? kept) => Assert.Equal(kept, PresetNameStore.Clean(name));
+
+    [Fact]
+    public void Names_are_cut_to_the_maximum_length() =>
+        Assert.Equal(PresetNameStore.MaxLength, PresetNameStore.Clean(new string('x', 100))!.Length);
+
+    [Fact]
+    public void A_damaged_names_file_means_no_names_not_a_crash()
+    {
+        using var temp = new TempFolder();
+        File.WriteAllText(temp.File("names.json"), "{ not json");
+
+        var store = new PresetNameStore(temp.File("names.json"));
+
+        Assert.Empty(store.NamesFor(temp.File("save.sav")));
+        Assert.Equal("Fresh", store.Set(temp.File("save.sav"), new PlateRef(1, 0), "Fresh"));
+    }
 }
 
 public class CatalogJsonTests

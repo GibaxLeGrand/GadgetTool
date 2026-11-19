@@ -13,6 +13,9 @@ internal sealed record AppOptions(string WebFolder, string CatalogPath, string? 
 
     public string SampleCopyPath => Path.Combine(DataFolder, "sample-save.json");
 
+    /// <summary>The presets' names: GadgetTool only, never written into a save.</summary>
+    public string NamesFile => Path.Combine(DataFolder, "preset-names.json");
+
     public static AppOptions Parse(string[] args)
     {
         var baseDir = AppContext.BaseDirectory;

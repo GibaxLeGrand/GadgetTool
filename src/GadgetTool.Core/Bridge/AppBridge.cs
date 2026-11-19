@@ -26,6 +26,7 @@ public interface IHostUi
 /// </param>
 /// <param name="SampleSavePath">A made-up save to try the tool with, or null.</param>
 /// <param name="SampleCopyPath">Where the sample is copied before it is opened, so the original stays clean.</param>
+/// <param name="Names">The presets' names (GadgetTool only, never in the save).</param>
 public sealed record AppBridgeOptions(
     GadgetCatalog Catalog,
     ISaveFormat Format,
@@ -34,7 +35,8 @@ public sealed record AppBridgeOptions(
     TimeProvider Time,
     string BackupDirectory,
     string? SampleSavePath,
-    string SampleCopyPath);
+    string SampleCopyPath,
+    PresetNameStore Names);
 
 /// <summary>
 /// Answers the web page's calls. The page posts <c>{ "id", "method", "params" }</c>; the answer
@@ -67,6 +69,7 @@ public sealed class AppBridge(AppBridgeOptions options)
                 "openSample" => OpenSample(),
                 "reloadSave" => OpenSave(_session?.Path ?? throw new BridgeError("noSave", "No save is open.")),
                 "save" => Save(args),
+                "renamePreset" => RenamePreset(args),
                 "gameRunning" => new JsonObject { ["running"] = options.Game.IsGameRunning() },
                 "exportFile" => ExportFile(args),
                 "importFile" => ImportFile(),
@@ -140,6 +143,16 @@ public sealed class AppBridge(AppBridgeOptions options)
         return new JsonObject { ["saved"] = changed, ["backup"] = backup };
     }
 
+    private JsonObject RenamePreset(JsonObject args)
+    {
+        var session = _session ?? throw new BridgeError("noSave", "No save is open.");
+        var preset = new PlateRef(Int(args, "player"), Int(args, "index"));
+        if (!session.Saved.Contains(preset))
+            throw new BridgeError("badRequest", $"The save has no {preset}.");
+
+        return new JsonObject { ["name"] = options.Names.Set(session.Path, preset, Text(args, "name")) };
+    }
+
     private JsonObject ExportFile(JsonObject args)
     {
         var content = Text(args, "content") ?? throw new BridgeError("badRequest", "Nothing to export.");
@@ -162,9 +175,11 @@ public sealed class AppBridge(AppBridgeOptions options)
         return new JsonObject { ["content"] = File.ReadAllText(path), ["fileName"] = Path.GetFileName(path) };
     }
 
-    private static JsonObject SaveDto(SaveSession session) => new()
+    private JsonObject SaveDto(SaveSession session) => new()
     {
         ["path"] = session.Path,
+        ["names"] = new JsonObject([.. options.Names.NamesFor(session.Path)
+            .Select(n => KeyValuePair.Create(n.Key, (JsonNode?)n.Value))]),
         ["fileName"] = Path.GetFileName(session.Path),
         ["version"] = session.Current.SaveVersion,
         ["players"] = new JsonArray([.. session.Current.Players.Select(p => (JsonNode)new JsonObject
@@ -209,6 +224,9 @@ public sealed class AppBridge(AppBridgeOptions options)
 
     private static string? Text(JsonObject obj, string name) =>
         obj[name] is JsonValue v && v.TryGetValue(out string? s) ? s : null;
+
+    private static int Int(JsonObject obj, string name) =>
+        obj[name] is JsonValue v && v.TryGetValue(out int i) ? i : throw new BridgeError("badRequest", $"'{name}' is missing or not a number.");
 
     private static JsonObject Cancelled() => new() { ["cancelled"] = true };
 

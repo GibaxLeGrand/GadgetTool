@@ -1,11 +1,12 @@
 using GadgetTool.Core.Bridge;
+using GadgetTool.Core.Sharing;
 
 namespace GadgetTool.App;
 
 /// <summary>The file pickers AppBridge asks for, as Windows dialogs over the main window.</summary>
 internal sealed class WinFormsHostUi(IWin32Window owner) : IHostUi
 {
-    private const string SetupsFilter = "GadgetTool setups (*.json)|*.json|All files (*.*)|*.*";
+    private static readonly string Presets = $"*{SetupJson.FileExtension}";
 
     public string? PickSaveToOpen()
     {
@@ -22,9 +23,10 @@ internal sealed class WinFormsHostUi(IWin32Window owner) : IHostUi
     {
         using var dialog = new SaveFileDialog
         {
-            Title = "Export presets",
-            Filter = SetupsFilter,
-            DefaultExt = "json",
+            Title = "Save presets to a file",
+            Filter = $"GadgetTool presets ({Presets})|{Presets}",
+            DefaultExt = SetupJson.FileExtension.TrimStart('.'),
+            AddExtension = true,
             FileName = suggestedName,
             OverwritePrompt = true,
         };
@@ -36,7 +38,7 @@ internal sealed class WinFormsHostUi(IWin32Window owner) : IHostUi
         using var dialog = new OpenFileDialog
         {
             Title = "Import presets",
-            Filter = SetupsFilter,
+            Filter = $"GadgetTool presets ({Presets};*.json)|{Presets};*.json|All files (*.*)|*.*",
             CheckFileExists = true,
         };
         return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.FileName : null;

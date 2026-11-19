@@ -36,7 +36,8 @@ internal sealed class MainForm : Form
             TimeProvider.System,
             options.BackupFolder,
             options.SampleSavePath,
-            options.SampleCopyPath));
+            options.SampleCopyPath,
+            new PresetNameStore(options.NamesFile)));
 
         Text = "GadgetTool";
         BackColor = Background;

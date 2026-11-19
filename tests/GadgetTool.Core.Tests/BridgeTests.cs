@@ -174,14 +174,33 @@ public sealed class AppBridgeTests : IDisposable
         Assert.Equal("noSave", ErrorKind(Call("save", new JsonObject { ["players"] = new JsonArray() })));
 
     [Fact]
-    public void Opens_a_copy_of_the_sample()
+    public void Opens_a_copy_of_the_sample_that_cannot_be_saved()
     {
         var sample = Result(Call("openSample"));
         var opened = sample["path"]!.GetValue<string>();
 
         Assert.Equal(_temp.File("data/sample-copy.json"), opened);
-        Result(Call("save", SaveRequest(sample, plates => plates[1] = new JsonObject { ["gadgets"] = new JsonArray(ThreeA) })));
+        Assert.True(sample["sample"]!.GetValue<bool>());
+        Assert.Equal("sampleReadOnly", ErrorKind(Call("save", SaveRequest(sample, plates => plates[1] = new JsonObject { ["gadgets"] = new JsonArray(ThreeA) }))));
         Assert.Equal(DevSaveJson, File.ReadAllText(_temp.File("sample.json")));
+        Assert.Equal(DevSaveJson, File.ReadAllText(opened));
+    }
+
+    [Fact]
+    public void The_sample_cannot_be_exported_from_or_imported_into_but_a_save_can()
+    {
+        _ui.ExportPath = _temp.File("out.json");
+        File.WriteAllText(_temp.File("in.json"), "{}");
+        _ui.ImportPath = _temp.File("in.json");
+
+        Result(Call("openSample"));
+        Assert.Equal("sampleReadOnly", ErrorKind(Call("exportFile", new JsonObject { ["suggestedName"] = "x.json", ["content"] = "{}" })));
+        Assert.Equal("sampleReadOnly", ErrorKind(Call("importFile")));
+        Assert.False(File.Exists(_temp.File("out.json")));
+
+        Assert.False(Open()["sample"]!.GetValue<bool>());
+        Result(Call("exportFile", new JsonObject { ["suggestedName"] = "x.json", ["content"] = "{}" }));
+        Result(Call("importFile"));
     }
 
     [Fact]

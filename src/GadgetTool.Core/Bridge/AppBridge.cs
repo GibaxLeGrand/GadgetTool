@@ -45,6 +45,13 @@ public sealed record AppBridgeOptions(
 
     /// <summary>The URL of the data pack's folder, where the page finds <c>ui/</c> (the game's icon bases); null without a pack.</summary>
     public string? PackUrl { get; init; }
+
+    /// <summary>
+    /// True to make the sample save from the gadget list (<see cref="SampleSave"/>) instead of
+    /// copying <see cref="SampleSavePath"/>: with the game's data, the made-up file's gadgets
+    /// would all be unknown.
+    /// </summary>
+    public bool SampleFromCatalog { get; init; }
 }
 
 /// <summary>
@@ -112,6 +119,21 @@ public sealed class AppBridge(AppBridgeOptions options)
             ["language"] = _language,
             ["languages"] = new JsonArray([.. options.Catalog.Languages.Select(l => (JsonNode)l)]),
             ["packUrl"] = options.PackUrl,
+            ["plates"] = new JsonArray([.. options.Catalog.Plates.Select(p => (JsonNode)new JsonObject
+            {
+                ["id"] = p.Id,
+                ["slots"] = p.Slots,
+                ["superSlot"] = p.SuperSlot,
+                ["image"] = p.Image,
+                ["name"] = p.Name.Get(_language, options.Catalog.DefaultLanguage),
+            })]),
+            ["plateGeometry"] = options.Catalog.PlateGeometry is { } g ? new JsonObject
+            {
+                ["width"] = g.Width, ["height"] = g.Height, ["cell"] = g.Cell,
+                ["first"] = new JsonArray(g.FirstX, g.FirstY), ["step"] = new JsonArray(g.StepX, g.StepY),
+                ["super"] = new JsonArray(g.SuperX, g.SuperY),
+                ["title"] = new JsonArray(g.TitleLeft, g.TitleTop, g.TitleRight, g.TitleBottom),
+            } : null,
             ["gadgets"] = new JsonArray([.. Gadgets.Gadgets.Select(g => (JsonNode)new JsonObject
             {
                 ["id"] = g.Id,
@@ -170,17 +192,34 @@ public sealed class AppBridge(AppBridgeOptions options)
 
     private JsonObject OpenSample()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.SampleCopyPath))!);
+        if (options.SampleFromCatalog)
+        {
+            File.WriteAllText(options.SampleCopyPath, SampleSave.Generate(options.Catalog.For(options.Catalog.DefaultLanguage)));
+            return OpenSave(options.SampleCopyPath);
+        }
+
         if (options.SampleSavePath is null || !File.Exists(options.SampleSavePath))
             throw new BridgeError("noSample", "No sample save comes with this build.");
-
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.SampleCopyPath))!);
         File.Copy(options.SampleSavePath, options.SampleCopyPath, overwrite: true);
         return OpenSave(options.SampleCopyPath);
+    }
+
+    /// <summary>Whether <paramref name="path"/> is the sample's copy: it is only for trying the tool.</summary>
+    private bool IsSample(string path) =>
+        string.Equals(Path.GetFullPath(path), Path.GetFullPath(options.SampleCopyPath), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Saving, importing and exporting are refused while the sample is open (Gibax).</summary>
+    private void RefuseOnSample()
+    {
+        if (_session is { } open && IsSample(open.Path))
+            throw new BridgeError("sampleReadOnly", "The sample save is only for trying GadgetTool: it cannot be saved, and presets cannot be imported into it or exported from it.");
     }
 
     private JsonObject Save(JsonObject args)
     {
         var session = _session ?? throw new BridgeError("noSave", "No save is open.");
+        RefuseOnSample();
         var edited = session.Saved;
 
         foreach (var node in args["players"] as JsonArray ?? throw new BridgeError("badRequest", "No players to save."))
@@ -213,6 +252,7 @@ public sealed class AppBridge(AppBridgeOptions options)
 
     private JsonObject ExportFile(JsonObject args)
     {
+        RefuseOnSample();
         var content = Text(args, "content") ?? throw new BridgeError("badRequest", "Nothing to export.");
         var path = options.Ui.PickExportPath(Text(args, "suggestedName") ?? "gadgettool.json");
         if (path is null)
@@ -224,6 +264,7 @@ public sealed class AppBridge(AppBridgeOptions options)
 
     private JsonObject ImportFile()
     {
+        RefuseOnSample();
         var path = options.Ui.PickFileToImport();
         if (path is null)
             return Cancelled();
@@ -239,6 +280,8 @@ public sealed class AppBridge(AppBridgeOptions options)
         ["names"] = new JsonObject([.. options.Names.NamesFor(session.Path)
             .Select(n => KeyValuePair.Create(n.Key, (JsonNode?)n.Value))]),
         ["fileName"] = Path.GetFileName(session.Path),
+        // The sample: the page turns off saving, importing and exporting.
+        ["sample"] = IsSample(session.Path),
         ["version"] = session.Current.SaveVersion,
         ["players"] = new JsonArray([.. session.Current.Players.Select(p => (JsonNode)new JsonObject
         {

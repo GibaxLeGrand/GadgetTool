@@ -103,6 +103,12 @@ public sealed class LocalizedCatalog
     /// <summary>The game's colour per category id ("#RRGGBB"); empty when the data has none.</summary>
     public IReadOnlyDictionary<string, string> CategoryColors { get; }
 
+    /// <summary>The game's plate levels and their pictures; empty without a data pack.</summary>
+    public IReadOnlyList<PlateDefinition> Plates { get; init; } = [];
+
+    /// <summary>Where things go on a plate picture; null without a data pack.</summary>
+    public PlateGeometry? PlateGeometry { get; init; }
+
     /// <summary>Every language the gadget names exist in, the default first.</summary>
     public IReadOnlyList<string> Languages { get; }
 

@@ -427,13 +427,13 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   `Base_02` / `Base_03` (1024x512 textures) at 2048x512: the whole texture twice as wide,
   which matches 2 and 3 cells of the plate to 3 pixels. The page now does that on the game's
   plate (`scaleX(2)`), no more stretching by the middle there.
-- Gibax also felt some bases were wrong (his capture: the "Perfect Charge" drawing on a
-  silver frame in the game, blue in the tool). Two gadgets share that drawing: the Mini
-  (1 slot, in `DA_MiniGadgetList`, silver in the tool) and the 2-slot one (blue). He could not
-  say which one his capture is. Checked: the kit frame follows `DT_GadgetVariousDefineData`
-  exactly (32 enabled kits, all in the "Kit" categories); EX is only for festival rules. A
-  sheet of all 148 gadgets on their bases: `extracted/bases_sheet.html` (git-ignored, served
-  from the repository root). Still open until he points at a wrong one in the game.
+- Gibax also felt some bases were wrong. Checked: which base each gadget gets was right
+  (Mini = `DA_MiniGadgetList`; the kit frame follows `DT_GadgetVariousDefineData` exactly,
+  32 enabled kits, all in the "Kit" categories; EX is only for festival rules). What was wrong
+  is the Mini icon's size: his renders of "Lv1 Quick Charge" (blue) and "Mini Lv1 Quick
+  Charge" (silver) show the Mini icon smaller, inside the silver ring. The Mini frame is the
+  usual base at 0.8, so the page draws Mini icons at 0.8. A sheet of all 148 gadgets on their
+  bases: `extracted/bases_sheet.html` (git-ignored, served from the repository root).
 
 ## Open questions
 

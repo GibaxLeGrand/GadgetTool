@@ -117,7 +117,26 @@
   const categoryKey = (g) => g.categoryId || g.category || "Other";
   const pips = (cost) => h("span", { class: "pips", title: `${cost} slot${cost > 1 ? "s" : ""}` },
     [1, 2, 3].map((i) => h("i", { class: i <= cost ? "on" : "" })));
-  const tip = (g) => `${g.name} · ${g.slotCost} slot${g.slotCost > 1 ? "s" : ""} · ${g.category}\n${g.description || ""}`;
+  const tip = (g) => `${g.name} · ${g.slotCost} slot${g.slotCost > 1 ? "s" : ""} · ${g.category}\n${plainText(g.description)}`
+    + (g.superEffect ? `\n\n★ Super Slot: ${plainText(g.superEffect)}` : "");
+
+  // The game's texts hold rich-text tags (<SpStyle>...</>) and placeholders the game fills in
+  // with a value ({GetRing}); GadgetTool does not know those values, so it shows "?".
+  const TEXT_TOKENS = /(<[A-Za-z]+>|<\/>|\{[A-Za-z0-9_]+\}|\n)/;
+  const plainText = (t) => (t || "").replace(/<[A-Za-z]+>|<\/>/g, "").replace(/\{[A-Za-z0-9_]+\}/g, "?");
+  function richText(t) {
+    const out = [];
+    let strong = false;
+    for (const part of (t || "").split(TEXT_TOKENS)) {
+      if (!part) continue;
+      if (/^<[A-Za-z]+>$/.test(part)) strong = true;
+      else if (part === "</>") strong = false;
+      else if (part === "\n") out.push(h("br"));
+      else if (/^\{[A-Za-z0-9_]+\}$/.test(part)) out.push(h("span", { class: "ph", title: "A value the game fills in" }, "?"));
+      else out.push(strong ? h("strong", {}, part) : part);
+    }
+    return out;
+  }
 
   function toast(text, kind = "ok") {
     const el = h("div", { class: "toast " + kind }, text);
@@ -404,7 +423,7 @@
     const f = state.filter;
     const text = f.text.trim().toLowerCase();
     const shown = catalog.gadgets.filter((g) =>
-      (!text || g.name.toLowerCase().includes(text) || (g.description || "").toLowerCase().includes(text)) &&
+      (!text || g.name.toLowerCase().includes(text) || plainText(g.description).toLowerCase().includes(text)) &&
       (!f.category || (g.category || "Other") === f.category) &&
       (!f.cost || g.slotCost === f.cost) &&
       (f.showLocked || p.unlocked.has(g.id)));
@@ -428,7 +447,7 @@
         onclick: () => (inRows || inSuper ? removeGadget(g.id) : addGadget(g.id)),
       },
       icon(g),
-      h("span", {}, h("div", { class: "name" }, g.name), h("div", { class: "desc" }, g.description || g.category)),
+      h("span", {}, h("div", { class: "name" }, g.name), h("div", { class: "desc" }, g.description ? richText(g.description) : g.category)),
       h("span", { class: "side" },
         pips(g.slotCost),
         locked ? h("span", { class: "badge state" }, "Locked")
@@ -471,12 +490,16 @@
     const text = state.filter.text.trim().toLowerCase();
     const groups = new Map();
     for (const g of catalog.gadgets) {
-      if (text && !g.name.toLowerCase().includes(text) && !(g.description || "").toLowerCase().includes(text)) continue;
+      if (text && !g.name.toLowerCase().includes(text) && !plainText(g.description).toLowerCase().includes(text)) continue;
       const key = categoryKey(g);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(g);
     }
-    const rows = [...groups].map(([key, gadgets]) => h("div", { class: "g-cat", style: `--h:${hue(key)}` },
+    const rows = [...groups].map(([key, gadgets]) => h("div", {
+      class: "g-cat",
+      // The game's category colour when the data pack has it (used by the game colours).
+      style: `--h:${hue(key)}` + (/^#[0-9A-Fa-f]{6}$/.test(gadgets[0].categoryColor || "") ? `;--cat:${gadgets[0].categoryColor}` : ""),
+    },
       h("div", { class: "g-cat-name" }, gadgets[0].category || "Other"),
       h("div", { class: "g-row" }, gadgets.map((g) => gameTile(g, p, pl)))));
     $("#gameGadgets").replaceChildren(...(rows.length ? rows : [h("p", { class: "g-none" }, "No gadget matches.")]));
@@ -519,7 +542,8 @@
     $("#gameInfo").replaceChildren(...(g
       ? [icon(g), h("div", {},
           h("div", { class: "g-info-name" }, `${g.name} · ${g.slotCost} slot${g.slotCost > 1 ? "s" : ""}`),
-          h("div", { class: "g-info-text" }, g.description || g.category))]
+          h("div", { class: "g-info-text" }, g.description ? richText(g.description) : g.category),
+          g.superEffect ? h("div", { class: "g-info-super" }, "★ Super Slot: ", richText(g.superEffect)) : null)]
       : [h("div", {},
           h("div", { class: "g-info-name" }, `${fullLabel(p.number, state.preset)} · ${GT.used(pl, catalog)}/${GT.capacity(p)} slots used`),
           h("div", { class: "g-info-text" }, "Click a gadget to add or remove it. Right-click a 1-slot gadget to put it in the Super Slot."))]));

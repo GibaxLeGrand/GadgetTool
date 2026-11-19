@@ -271,9 +271,12 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   68 Super effects. The 23 `bInvisibleGadgetCustom` gadgets stay in: saves own and equip
   some of them. Every gadget of the measuring PC's save is in the pack.
 - **Ids ignore case** (Unreal names): the table's row names sometimes differ from its `ID`
-  field in case (`Run45_...` against `run45_...`); the save spells them like `ID`. The Core
-  compares ids exactly for now: **to fix when the app opens real saves** (compare ignoring
-  case, or canonicalise to the catalog's spelling on read).
+  field in case (`Run45_...` against `run45_...`); the save spells them like `ID`. Done
+  2026-11-19 (branch `core/ids-ignore-case`): every comparison goes through
+  `GadgetIds.Comparer` (ordinal, ignoring case) in the Core and `idKey` in `web/js/rules.js`;
+  a catalog refuses two ids that differ only by case; `SaveSession.Open` spells every id as
+  the catalog does (`SaveSetups.WithCatalogSpelling`); share codes hash the catalog's
+  spelling, so the code format and the page's codes did not change.
 - Descriptions hold game placeholders (`{GetRing}`, filled from gadget parameters) and
   rich-text tags (`<SpStyle>...</>`): the app shows them raw for now.
 - Not done yet: icon export (textures, `icon` paths are in the pack), `index.json`, the

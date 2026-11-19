@@ -249,6 +249,35 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   measuring PC only). The paks open with the AES key already used for modding on that PC.
 - **Decision pending (Gibax)**: how the public tool gets the save key. Agent's advice: ship
   it with the data packs on the releases page, never in git, like the icons.
+- The save (PR #1, merged by Gibax on 2026-11-19) is read by the Core; the app does not use
+  it yet.
+
+## The extractor (2026-11-19)
+
+- `src/GadgetTool.Extractor` (CLI, CUE4Parse 1.2.2.202611 from nuget.org, plus
+  `Microsoft.Bcl.Memory` 10.0.15 because CUE4Parse brings 9.0.0, which has a known advisory
+  and fails the build with warnings as errors). `GameFiles` reads the paks (base game only,
+  `~mods` skipped, Oodle from a local dll, never downloaded); `PackBuilder` (pure, tested in
+  `tests/GadgetTool.Extractor.Tests` with made-up tables) decides what goes in the pack.
+- **Gadget data**: `DT_GadgetData` rows: `bIsEnabled`, `ID` (`EGadgetId::...`), `Category`
+  (`EGadgetCategory::...`), `Name` / `Explanation` / `ExplanationSpecial` (Super effect)
+  as string-table texts (`DB_Gadget`, `S2_DB_Gadget`, `S2_DB_Gadget_Special`; their source
+  strings are the keys, the real texts are in `Localization/Game/<lang>/Game.locres`),
+  `IconTexture`, `ThumbnailTexture`, `SizeX` (**slot cost**), `SizeY` (always 1), `plateId`
+  (plate level needed), `Price`, `bIsDefault`, `GadgetCustomSortId`,
+  `bInvisibleGadgetCustom`. `DT_GadgetCustomCategoryData`: category name, colours (hex),
+  `SortID`.
+- 2.0.0: 174 rows, 148 enabled (the pack holds those), 13 categories in use, 15 languages,
+  68 Super effects. The 23 `bInvisibleGadgetCustom` gadgets stay in: saves own and equip
+  some of them. Every gadget of the measuring PC's save is in the pack.
+- **Ids ignore case** (Unreal names): the table's row names sometimes differ from its `ID`
+  field in case (`Run45_...` against `run45_...`); the save spells them like `ID`. The Core
+  compares ids exactly for now: **to fix when the app opens real saves** (compare ignoring
+  case, or canonicalise to the catalog's spelling on read).
+- Descriptions hold game placeholders (`{GetRing}`, filled from gadget parameters) and
+  rich-text tags (`<SpStyle>...</>`): the app shows them raw for now.
+- Not done yet: icon export (textures, `icon` paths are in the pack), `index.json`, the
+  catalog reader for the extra fields (`superEffect`, `categories`...).
 
 ## Open questions
 

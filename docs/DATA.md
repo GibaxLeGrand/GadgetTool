@@ -88,7 +88,7 @@ be written: the app shows the one closest to the player's choice and falls back 
 | `steamBuildId` | top | not yet | The Steam build the pack was read from (`buildid` in `appmanifest_2486820.acf`). |
 | `languages` | top | not yet | Every language written, the default first. |
 | `plate` | gadget | not yet | The plate level the gadget needs (`Rank0` to `Rank7`). |
-| `base` | gadget | yes | The base the game draws the icon on: `kit`, `mini`, or absent for the usual hexagon. |
+| `base` | gadget | yes | The base the game draws the icon on: `kit`, `ex` (EX kit), `mini`, or absent for the usual hexagon. |
 | `icon` | gadget | via `icons/` | The icon's asset path in the game's files; the icon itself is `icons/<id>.png`. |
 
 Texts are kept as the game has them: a description may hold a placeholder the game fills in
@@ -136,16 +136,25 @@ game's canvases have transparent margins, the 2-slot base sits on a 3-slot canva
 | File | Texture (`/Game/01_Union/UI/Common/GadgetIcon/Texture/`) | Used for |
 |---|---|---|
 | `base-1.png`, `base-2.png`, `base-3.png` | `UI_GadgetIcon_Base_01`, `_02`, `_03` | the usual gadgets, by slot cost |
-| `base-kit-1.png`, `base-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001`, `UI_GadgetIcon_Base_03_Kit_001` | `base: kit` (a 2-slot kit uses `base-2.png`, as the game's list does) |
+| `base-kit-1.png`, `base-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001`, `UI_GadgetIcon_Base_03_Kit_001` | `base: kit` |
+| `base-ex-kit-1.png`, `base-ex-kit-3.png` | `UI_GadgetIcon_Base_01_Kit_001_EX`, `UI_GadgetIcon_Base_03_Kit_002_EX` | `base: ex`: the EX kits (pink) |
 | `base-mini.png` | `UI_GadgetIcon_Base_01_Mini` | `base: mini` |
 | `base-super.png` | `UI_GadgetIcon_Base_01_Super_01` | the gadget in the Super Slot |
 
-The game picks the base in native code (`EquipmentGadgetIcon::SetIconBaseShape`); its widget
-lists the materials (`BaseIconGadgetKitMaterialRefArray`, `FrameIconMiniGadgetMaterial`).
-`mini` comes from `DA_MiniGadgetList`; `kit` from the categories whose id ends with "Kit"
-(32 gadgets, all 3-slot, in 2.0.0). The page draws the 512-pixel icon centred over the base,
-at 512/435 of the base's height, as the two textures line up in the game. The pink "EX"
-bases are not used by the gadget icon widget and are not exported.
+The game picks the base in native code (`EquipmentGadgetIcon::SetIconBaseShape`); its
+widgets list the materials (`BaseIconGadgetKitMaterialRefArray`, `FrameIconMiniGadgetMaterial`,
+and in the gadget list's `WBP_GadgetIcon_Cost01_Icon`: `DefaultBaseMaterial`,
+`KitBaseMaterial`, `ExGadgetDefaultBaseMaterial`, `ExGadgetKitBaseMaterial`,
+`MiniBaseMaterial`). `mini` comes from `DA_MiniGadgetList`; `ex` from the "AdvancedKit"
+category (16 kits; Gibax named the Spin Dash kit as EX); `kit` from the other categories
+whose id ends with "Kit" (16 kits). All kits are 3-slot in 2.0.0.
+
+As in the game (Gibax): **in the gadget list every gadget is drawn on a 1-slot base** (the
+slot cost is shown above it); **on the plate, on its real size**, a 2- or 3-slot base
+stretched by its middle to its cells' width (the pointed ends, 115 of 435 pixels on each
+side, kept as drawn). The page draws the 512-pixel icon centred over the base, at 512/435 of
+the base's height, as the two textures line up in the game. The plain pink bases
+(`UI_GadgetIcon_Base_01/02/03_EX`) have no gadget that uses them yet and are not exported.
 
 Gadget ids are Unreal names, which ignore letter case: compare them ignoring case. In game
 2.0.0 the save spells them as the table's `ID` field does (the id the extractor writes),

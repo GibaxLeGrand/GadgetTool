@@ -151,6 +151,29 @@
     return { applied, save: applied ? updated : save, targets: outcomes };
   }
 
+  /**
+   * Every preset of player `from` onto the same preset of each player in `to` (A on A, B on
+   * B...), each checked against its target player's rules as `paste` does. Applied only when
+   * every target accepts; the outcomes say which do not, and why.
+   */
+  function copyPlayer(save, from, to, catalog, mode) {
+    const source = save.players.find((p) => p.number === from);
+    if (!source) return { applied: false, save, targets: [] };
+    const outcomes = [];
+    let updated = save;
+    source.plates.forEach((plate, index) => {
+      const targets = to
+        .filter((n) => n !== from)
+        .filter((n) => index < (save.players.find((p) => p.number === n)?.plates.length ?? 0))
+        .map((n) => ({ player: n, index }));
+      const result = paste(updated, plate, targets, catalog, mode);
+      outcomes.push(...result.targets);
+      if (result.applied) updated = result.save;
+    });
+    const applied = outcomes.length > 0 && outcomes.every((o) => o.issues.length === 0);
+    return { applied, save: applied ? updated : save, targets: outcomes };
+  }
+
   // ---- Share codes (ShareCode in the Core: same bytes) --------------------------------
 
   const PREFIX = "GT1-";
@@ -443,7 +466,7 @@
   }
 
   window.GT = {
-    arrange, slotCount, capacity, used, levelName, validate, describe, paste, withPlate, samePlate, clonePlate,
+    arrange, slotCount, capacity, used, levelName, validate, describe, paste, copyPlayer, withPlate, samePlate, clonePlate,
     encodeShareCode, decodeShareCode, FILE_EXTENSION, exportJson, importJson, makeCatalog, fromSaveDto, toSaveRequest,
     parseVersion, versionText, ageOf, compareGadgets, describeChange, localizeCatalog,
     presetLetter: (i) => String.fromCharCode(65 + i),

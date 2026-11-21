@@ -64,6 +64,7 @@
           <button id="copyBtn" title="Copy this preset (Ctrl+C)">Copy</button>
           <button id="pasteHereBtn" title="Paste the copied preset here (Ctrl+V)">Paste here</button>
           <button id="pasteToBtn" title="Paste this preset on other presets or players">Paste to…</button>
+          <button id="copyPlayerBtn" title="Copy every preset of this player onto other players (A on A, B on B...)">Copy player…</button>
           <button id="shareBtn" title="Share code, or save to a .gtpresets file">Share…</button>
           <button id="importBtn" title="Import a share code or a .gtpresets file onto this preset">Import…</button>
           <button id="clearBtn" class="danger" title="Remove every gadget from this preset">Clear</button>
@@ -118,6 +119,22 @@
       <div class="dialog-buttons">
         <button value="cancel">Cancel</button>
         <button id="pasteGo" class="primary" value="paste">Paste</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="copyPlayerDialog">
+    <form method="dialog" class="dialog">
+      <h2>Copy every preset of <span id="cpFrom"></span></h2>
+      <p class="muted">Preset A goes on A, B on B, and so on: the presets of the players you tick are
+        replaced. Undo puts them back; nothing is written until you save.</p>
+      <div class="cp-targets" id="cpTargets"></div>
+      <label class="check"><input type="checkbox" id="cpDrop"> Leave out the gadgets a player cannot use</label>
+      <label class="check"><input type="checkbox" id="cpNames" checked> Copy the preset names too</label>
+      <p class="paste-summary" id="cpSummary"></p>
+      <div class="dialog-buttons">
+        <button value="cancel">Cancel</button>
+        <button id="cpGo" class="primary" value="copy">Copy</button>
       </div>
     </form>
   </dialog>

@@ -776,3 +776,11 @@ body.theme-game {
 /* In the game view the plate's slot would shrink to its content, which a container has none of. */
 .game #gamePlateSlot { align-self: stretch; }
 .game .plate.textured { max-width: 760px; }
+
+/* Copy a player's presets onto other players. */
+.cp-targets { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.cp-target { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); cursor: pointer; }
+.cp-target.sel { box-shadow: inset 0 0 0 1px var(--accent); }
+.cp-target .ok { color: #9be7a6; }
+.cp-target .warn { color: #ffd479; }
+.cp-target .bad { color: #ffb3ba; }

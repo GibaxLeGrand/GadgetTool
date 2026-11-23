@@ -454,6 +454,21 @@ build 24996408. Details in `notes/sessions/2026-11-19-measuring-pc.md`.
   4 pixels right, onto the centre of the picture's gold hole (1261; the widget gives 1257),
   as Gibax asked. Local check files (git-ignored): `extracted/ref_ingame_plate.webp`.
 
+## Copying a player onto other players (2026-11-21, branch `app/copy-player`)
+
+- Gibax: "copy/import a player's presets onto another in one or two buttons". A "Copy
+  player…" button (next to "Paste to…", both views) opens a dialog: tick the target players,
+  Copy. Every preset of the current player goes on the same preset of each target (A on A...),
+  through `GT.copyPlayer` (`rules.js`), which runs `GT.paste` preset by preset: each target's
+  rules are checked, the copy applies only when every preset fits, "Leave out..." keeps what
+  each player can use (drops a Super Slot gadget where the plate has none). Each target shows
+  beforehand whether everything fits. Undo restores; nothing is written before Save. Preset
+  names (GadgetTool's own) are copied where the source has one (box ticked by default).
+- In a real save all players share the plate level and the unlocked gadgets, so a copy always
+  fits; refusals only show with the sample, whose players have different levels.
+- Checked in the browser (P1 onto P2, undo, redo) and in the app on the real save by Gibax
+  (validated).
+
 ## Open questions
 
 1. ~~Save location.~~ Answered 2026-11-19 (see "The real save" above).

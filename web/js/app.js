@@ -290,6 +290,8 @@
       ? "GadgetTool refuses to save while the game runs"
       : "Browser preview: click to pretend the game is running";
     $("#pasteHereBtn").disabled = !state.clipboard;
+    // Copying a player needs another player to copy onto.
+    $("#copyPlayerBtn").disabled = !open || state.current.players.length < 2;
   }
 
   function renderPlayers() {
@@ -883,6 +885,55 @@
     setTimeout(watchGame, 3000);
   }
 
+  // ---- Copy a player's presets onto other players ---------------------------------------
+
+  const copyPl = { from: 1, selected: new Set(), result: null };
+
+  function openCopyPlayerDialog() {
+    copyPl.from = state.player;
+    copyPl.selected = new Set();
+    // With two players there is only one place to copy to: ticked already.
+    const others = state.current.players.filter((p) => p.number !== copyPl.from);
+    if (others.length === 1) copyPl.selected.add(others[0].number);
+    $("#cpDrop").checked = false;
+    $("#copyPlayerDialog").returnValue = "";
+    $("#cpFrom").textContent = `P${copyPl.from}`;
+    renderCopyPlayer();
+    $("#copyPlayerDialog").showModal();
+  }
+
+  function renderCopyPlayer() {
+    const mode = $("#cpDrop").checked ? "dropMissing" : "strict";
+    const to = [...copyPl.selected];
+    const result = copyPl.result = GT.copyPlayer(state.current, copyPl.from, to, catalog, mode);
+    // What each player would make of the copy, ticked or not, so the choice is informed.
+    const each = new Map(state.current.players.filter((p) => p.number !== copyPl.from)
+      .map((p) => [p.number, GT.copyPlayer(state.current, copyPl.from, [p.number], catalog, mode)]));
+
+    $("#cpTargets").replaceChildren(...state.current.players.filter((p) => p.number !== copyPl.from).map((p) => {
+      const r = each.get(p.number);
+      const refused = r.targets.filter((o) => o.issues.length).length;
+      const left = r.targets.filter((o) => o.dropped.length && !o.issues.length).length;
+      const status = refused ? h("span", { class: "bad" }, `${refused} preset${refused > 1 ? "s" : ""} refused`)
+        : left ? h("span", { class: "warn" }, `fits, gadgets left out on ${left}`)
+        : h("span", { class: "ok" }, "every preset fits");
+      const sel = copyPl.selected.has(p.number);
+      return h("label", { class: "cp-target" + (sel ? " sel" : "") },
+        h("input", { type: "checkbox", checked: sel, onchange: () => { sel ? copyPl.selected.delete(p.number) : copyPl.selected.add(p.number); renderCopyPlayer(); } }),
+        h("b", {}, `P${p.number}`), h("span", { class: "muted" }, ` · ${p.level}`), " ", status);
+    }));
+
+    const bad = result.targets.filter((o) => o.issues.length);
+    $("#cpSummary").replaceChildren(!to.length
+      ? "Tick the players to copy onto."
+      : bad.length
+        ? h("span", { class: "bad" }, `${bad.length} preset${bad.length > 1 ? "s" : ""} refuse${bad.length > 1 ? "" : "s"}. `,
+            groupByReason(bad).map(([reason, outs]) => h("div", {}, `${reason} (${compactTargets(outs.map((o) => o.target))})`)),
+            mode === "strict" ? h("div", {}, "Tick “Leave out…” to copy what each player can use.") : null)
+        : `${result.targets.length} presets will be replaced on ${to.map((n) => "P" + n).join(", ")}.`);
+    $("#cpGo").disabled = !result.applied;
+  }
+
   // ---- Paste dialog ------------------------------------------------------------------
 
   const paste = { plate: null, what: "", name: null, selected: new Set() };
@@ -1195,6 +1246,17 @@
     gamePanel.addEventListener("drop", (e) => { gamePanel.classList.remove("over"); const id = e.dataTransfer.getData("text/gt-placed"); if (id) { e.preventDefault(); removeGadget(id); } });
 
     $("#pasteDrop").onchange = renderPasteGrid;
+    $("#copyPlayerBtn").onclick = openCopyPlayerDialog;
+    $("#cpDrop").onchange = renderCopyPlayer;
+    $("#copyPlayerDialog").addEventListener("close", () => {
+      const r = copyPl.result;
+      if ($("#copyPlayerDialog").returnValue !== "copy" || !r?.applied) return;
+      const to = [...new Set(r.targets.map((o) => o.target.player))];
+      commit(r.save, `Copied P${copyPl.from}'s presets onto ${to.map((n) => "P" + n).join(", ")}.`);
+      // Names are GadgetTool's own (not in the game's save): copied where the source has one.
+      if ($("#cpNames").checked)
+        for (const o of r.targets) applyName(o.target, presetName(copyPl.from, o.target.index));
+    });
     $("#pasteDialog").addEventListener("close", () => {
       if ($("#pasteDialog").returnValue !== "paste" || !paste.result?.applied) return;
       const n = paste.result.targets.length;

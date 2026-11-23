@@ -52,6 +52,7 @@ synced by Steam Cloud).
 - Edit a preset: only gadgets you have already unlocked, respecting each gadget's slot cost,
   the plate's rows and the Super Slot (1-slot gadgets only).
 - Copy and paste a preset to any other preset, of any player, or to many at once.
+- Copy every preset of a player onto other players in one go (A on A, B on B...), each checked against the target player's rules.
 - Export and import setups as JSON or as a short text code you can paste in a chat.
 
 ## Safety rules the tool will follow
